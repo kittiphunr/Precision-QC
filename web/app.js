@@ -22,7 +22,7 @@ function setEngine(state, text) {
 /* ------------------------------------------------------------------ boot */
 async function boot() {
   try {
-    const manifest = await (await fetch("manifest.json")).json();
+    const manifest = await (await fetch("manifest.json", { cache: "no-store" })).json();
     renderSamples(manifest.samples || []);
     const pyodide = await loadPyodide({ indexURL: PYODIDE_INDEX });
     setEngine("loading", "กำลังโหลด numpy + Pillow…");
@@ -30,7 +30,7 @@ async function boot() {
     const root = "/home/pyodide/precision_qc";
     pyodide.FS.mkdirTree(root);
     for (const f of manifest.py_files) {
-      const src = await (await fetch(`py/precision_qc/${f}`)).text();
+      const src = await (await fetch(`py/precision_qc/${f}?v=${manifest.build}`)).text();
       pyodide.FS.writeFile(`${root}/${f}`, src);
     }
     pyodide.runPython("import sys; sys.path.insert(0, '/home/pyodide')");
