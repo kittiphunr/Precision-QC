@@ -63,7 +63,9 @@ function applyLang(next) {
   document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
   document.querySelectorAll(".lang-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
-  $("#credit-zh").hidden = lang !== "zh";
+  const credit = $("#credit");
+  credit.lang = document.documentElement.lang;
+  credit.innerHTML = `${t("credit.line1", { name: `<b>${esc(t("credit.name"))}</b>` })}<br />${esc(t("credit.line2"))}`;
   setEngine(...engineState);
   results.forEach(mountCard);
   renderSummary();
@@ -454,7 +456,7 @@ function reportPages(item, info, issued, lng) {
   const reasons = r.reasons.length
     ? `<ul>${r.reasons.map((x) => `<li>${esc(reasonText(x.code, r, lng))}</li>`).join("")}</ul>`
     : `<div>${L("r.allMet")}</div>`;
-  const credit = [window.CREDIT.th, window.CREDIT.en, lng === "zh" ? window.CREDIT.zh : null].filter(Boolean).join("<br/>");
+  const credit = `${esc(L("credit.line1", { name: L("credit.name") }))}<br/>${esc(L("credit.line2"))}`;
 
   const page1 = `
     <div class="rpage" lang="${lng}">
@@ -605,7 +607,7 @@ async function downloadPdf(items) {
       title: items.length === 1 ? t("r.pdfTitleOne", { no: items[0].reportNo }, lng) : t("r.pdfTitleMany", {}, lng),
       subject: "Fungal culture quality assessment",
       creator: `Precision QC v${APP_VERSION}`,
-      author: window.CREDIT.en.replace("Developed by ", ""),
+      author: `${t("credit.name", {}, lng)}, ${t("credit.line2", {}, lng)}`,
     });
     const name = items.length === 1
       ? `${items[0].reportNo}_${stem(items[0].report.name)}_${lng.toUpperCase()}.pdf`
