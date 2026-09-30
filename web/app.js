@@ -11,6 +11,8 @@ const PDF_LIBS = [
 const CFG_KEY = "precision-qc-config";
 const INFO_KEY = "precision-qc-report-info";
 const APP_VERSION = "1.1";
+const CREDIT_TH = "พัฒนาโดย นายกิตติพันธ์ รัตนคร นักวิชาการคอมพิวเตอร์ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่";
+const CREDIT_EN = "Developed by Mr. Kittiphun Rattanakorn, Computer Technical Officer, Mahachulalongkornrajavidyalaya University, Phrae Campus";
 
 const $ = (s, root = document) => root.querySelector(s);
 let api = null;
@@ -504,6 +506,7 @@ function reportPages(item, info, issued) {
         </table>
       </div>
       <div class="r-end">— END OF REPORT —</div>
+      <div class="r-credit">Software: Precision QC v${APP_VERSION} · ${CREDIT_EN}<br/>${CREDIT_TH}</div>
       ${foot(2)}
     </div>`;
   return page1 + page2;
@@ -554,6 +557,7 @@ async function downloadPdf(items) {
       title: items.length === 1 ? `Test report ${items[0].reportNo}` : "Fungal culture QC test reports",
       subject: "Fungal culture quality assessment",
       creator: `Precision QC v${APP_VERSION}`,
+      author: CREDIT_EN.replace("Developed by ", ""),
     });
     const name = items.length === 1
       ? `${items[0].reportNo}_${stem(items[0].report.name)}.pdf`
