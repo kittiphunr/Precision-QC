@@ -298,10 +298,6 @@ main > *, #results > * { min-width: 0; }
 .privacy { text-align: center; margin-bottom: 14px !important; }
 .credit { line-height: 1.65; text-align: center; }
 .credit b { color: var(--ink-2); font-weight: 600; }
-@media screen and (min-width: 48em) {
-  .credit [lang="th"] { text-align: right; }
-  .credit [lang="en"] { text-align: left; }
-}
 
 @media (max-width: 560px) {
   .panel, .card-body { padding: 16px; }

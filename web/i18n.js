@@ -76,6 +76,9 @@ window.I18N = {
     "th.grade": "เกรด",
     "th.note": "หมายเหตุ",
 
+    "credit.line1": "พัฒนาโดย {name} นักวิชาการคอมพิวเตอร์",
+    "credit.name": "นายกิตติพันธ์ รัตนคร",
+    "credit.line2": "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่",
     "footer.privacy": "ภาพถูกประมวลผลบนเครื่องของคุณเท่านั้น ไม่มีการอัปโหลดไปที่ใด",
     "busy.pdf": "กำลังสร้างรายงาน PDF…",
     "busy.pdfN": "กำลังสร้างรายงาน PDF… ({i}/{n})",
@@ -272,6 +275,9 @@ window.I18N = {
     "th.grade": "Grade",
     "th.note": "Notes",
 
+    "credit.line1": "Developed by {name}, Computer Technical Officer",
+    "credit.name": "Mr. Kittiphun Rattanakorn",
+    "credit.line2": "Mahachulalongkornrajavidyalaya University, Phrae Campus",
     "footer.privacy": "Images are processed on your device only and are never uploaded",
     "busy.pdf": "Creating PDF report…",
     "busy.pdfN": "Creating PDF report… ({i}/{n})",
@@ -468,6 +474,9 @@ window.I18N = {
     "th.grade": "等级",
     "th.note": "备注",
 
+    "credit.line1": "开发者：{name}，计算机技术官员",
+    "credit.name": "Kittiphun Rattanakorn 先生（กิตติพันธ์ รัตนคร）",
+    "credit.line2": "摩诃朱拉隆功佛教大学 帕府校区",
     "footer.privacy": "图片仅在您的设备上处理，不会上传到任何地方",
     "busy.pdf": "正在生成 PDF 报告…",
     "busy.pdfN": "正在生成 PDF 报告…（{i}/{n}）",
@@ -589,11 +598,4 @@ window.I18N = {
     "r.pdfTitleOne": "检测报告 {no}",
     "r.pdfTitleMany": "真菌菌种质量检测报告",
   },
-};
-
-/* Developer credit — Thai and English are always shown; Chinese is added when 中文 is selected. */
-window.CREDIT = {
-  th: "พัฒนาโดย นายกิตติพันธ์ รัตนคร นักวิชาการคอมพิวเตอร์ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่",
-  en: "Developed by Mr. Kittiphun Rattanakorn, Computer Technical Officer, Mahachulalongkornrajavidyalaya University, Phrae Campus",
-  zh: "开发者：Kittiphun Rattanakorn 先生（กิตติพันธ์ รัตนคร），计算机技术官员，摩诃朱拉隆功佛教大学 帕府校区",
 };
