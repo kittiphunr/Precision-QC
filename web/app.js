@@ -1,7 +1,7 @@
-/* Precision QC web UI.
+/* Precision QC web UI (ไทย · English · 中文).
  * Image analysis is done by the Python package `precision_qc`, running in the
  * browser through Pyodide. PDF reports are rendered from HTML (A4 portrait)
- * with html2canvas + jsPDF, both loaded on demand. */
+ * with html2canvas + jsPDF, both loaded on demand. Texts live in i18n.js. */
 
 const PYODIDE_INDEX = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
 const PDF_LIBS = [
@@ -10,25 +10,90 @@ const PDF_LIBS = [
 ];
 const CFG_KEY = "precision-qc-config";
 const INFO_KEY = "precision-qc-report-info";
-const APP_VERSION = "1.1";
-const CREDIT_TH = "พัฒนาโดย นายกิตติพันธ์ รัตนคร นักวิชาการคอมพิวเตอร์ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่";
-const CREDIT_EN = "Developed by Mr. Kittiphun Rattanakorn, Computer Technical Officer, Mahachulalongkornrajavidyalaya University, Phrae Campus";
+const LANG_KEY = "precision-qc-lang";
+const THEME_KEY = "precision-qc-theme";
+const LANGS = ["th", "en", "zh"];
+const LOCALE = { th: "th-TH", en: "en-GB", zh: "zh-CN" };
+const APP_VERSION = "1.2";
 
 const $ = (s, root = document) => root.querySelector(s);
 let api = null;
 let defaults = {};
-let results = []; // { id, file, report, analyzedAt, reportNo }
+let results = []; // { id, file, report, analyzedAt, reportNo, card }
 let seq = 0;
+let engineState = ["loading", "engine.loading"];
 
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(+v) ? "—" : (+v).toFixed(d));
 const stem = (name) => name.replace(/\.[^.]+$/, "");
 
-function setEngine(state, text) {
-  $("#engine").className = `engine ${state}`;
-  $("#engine-text").textContent = text;
+/* --------------------------------------------------------------- language */
+function pickLang() {
+  const fromUrl = new URLSearchParams(location.search).get("lang");
+  if (LANGS.includes(fromUrl)) return fromUrl;
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (LANGS.includes(saved)) return saved;
+  } catch (_) { /* storage unavailable */ }
+  const nav = (navigator.language || "").toLowerCase();
+  if (nav.startsWith("zh")) return "zh";
+  if (nav.startsWith("en")) return "en";
+  return "th";
 }
+let lang = pickLang();
+
+// t("key", {name: value}) in the current (or given) language, falling back to English then Thai
+function t(key, params = {}, lng = lang) {
+  const s = window.I18N[lng]?.[key] ?? window.I18N.en[key] ?? window.I18N.th[key] ?? key;
+  return s.replace(/\{(\w+)\}/g, (_, k) => (k in params ? params[k] : `{${k}}`));
+}
+
+function setEngine(state, key) {
+  engineState = [state, key];
+  $("#engine").className = `engine ${state}`;
+  $("#engine-text").textContent = t(key);
+}
+
+function applyLang(next) {
+  lang = next;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* ignore */ }
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
+  document.title = t("app.title");
+  document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
+  document.querySelectorAll(".lang-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  const credit = $("#credit");
+  credit.lang = document.documentElement.lang;
+  credit.innerHTML = `${t("credit.line1", { name: `<b>${esc(t("credit.name"))}</b>` })}<br />${esc(t("credit.line2"))}`;
+  setEngine(...engineState);
+  results.forEach(mountCard);
+  renderSummary();
+}
+
+document.querySelectorAll(".lang-switch button").forEach((b) => b.addEventListener("click", () => applyLang(b.dataset.lang)));
+
+/* ------------------------------------------------------------------ theme
+ * "light" / "dark" set html[data-theme]; "auto" removes it and follows the OS. */
+function currentTheme() {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return v === "light" || v === "dark" ? v : "auto";
+  } catch (_) { return "auto"; }
+}
+
+function applyTheme(choice) {
+  if (choice === "light" || choice === "dark") document.documentElement.setAttribute("data-theme", choice);
+  else document.documentElement.removeAttribute("data-theme");
+  try {
+    if (choice === "auto") localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, choice);
+  } catch (_) { /* ignore */ }
+  document.querySelectorAll(".theme-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeChoice === choice)));
+}
+
+document.querySelectorAll(".theme-switch button").forEach((b) => b.addEventListener("click", () => applyTheme(b.dataset.themeChoice)));
+applyTheme(currentTheme());
 
 /* --------------------------------------------------------------------- boot */
 async function boot() {
@@ -36,7 +101,7 @@ async function boot() {
     const manifest = await (await fetch("manifest.json", { cache: "no-store" })).json();
     renderSamples(manifest.samples || []);
     const pyodide = await loadPyodide({ indexURL: PYODIDE_INDEX });
-    setEngine("loading", "กำลังเตรียมระบบ… (ครั้งแรกอาจใช้เวลาสักครู่)");
+    setEngine("loading", "engine.loading2");
     await pyodide.loadPackage(["numpy", "pillow"]);
     const root = "/home/pyodide/precision_qc";
     pyodide.FS.mkdirTree(root);
@@ -48,12 +113,12 @@ async function boot() {
     api = pyodide.pyimport("precision_qc.api");
     defaults = JSON.parse(api.default_config_json());
     loadForm($("#cfg"), CFG_KEY, defaults);
-    setEngine("ready", "พร้อมใช้งาน");
+    setEngine("ready", "engine.ready");
     $("#drop").classList.remove("disabled");
     document.querySelectorAll(".chip").forEach((b) => (b.disabled = false));
   } catch (err) {
     console.error(err);
-    setEngine("error", "เตรียมระบบไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้า");
+    setEngine("error", "engine.error");
   }
 }
 
@@ -107,7 +172,7 @@ function renderSamples(names) {
   box.innerHTML = "";
   for (const n of names) {
     const b = document.createElement("button");
-    b.className = "btn chip";
+    b.className = "pure-button chip";
     b.textContent = stem(n).replace(/_/g, " ");
     b.disabled = true;
     b.addEventListener("click", async () => {
@@ -131,85 +196,67 @@ async function runFiles(files) {
   for (const file of files) {
     const card = document.createElement("article");
     card.className = "panel card";
-    card.innerHTML = `<div class="loading-card"><div class="spinner"></div>กำลังตรวจ ${esc(file.name)}…</div>`;
+    card.innerHTML = `<div class="loading-card"><div class="spinner"></div>${esc(t("card.checking", { name: file.name }))}</div>`;
     $("#results").prepend(card);
     await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const report = JSON.parse(api.analyze_to_json(bytes, cfgJson, file.name));
       const analyzedAt = new Date();
-      const item = { id: ++seq, file, report, analyzedAt, reportNo: newReportNo(analyzedAt) };
+      const item = { id: ++seq, file, report, analyzedAt, reportNo: newReportNo(analyzedAt), card };
       results.push(item);
       card.id = `r-${item.id}`;
-      card.innerHTML = renderCard(item);
-      $(".dl-one", card).addEventListener("click", () => downloadPdf([item]));
-      card.querySelectorAll(".thumbs img, .photo img").forEach((img) => img.addEventListener("click", () => lightbox(img.src)));
+      mountCard(item);
     } catch (err) {
       console.error(err);
-      card.innerHTML = `<p class="error">ตรวจภาพ ${esc(file.name)} ไม่สำเร็จ กรุณาลองภาพอื่น หรือถ่ายภาพจากด้านบนให้เห็นจานทั้งใบ</p>`;
+      card.innerHTML = `<p class="error">${esc(t("card.error", { name: file.name }))}</p>`;
     }
     renderSummary();
   }
 }
 
-/* -------------------------------------------------------- wording (TH / EN) */
-const GRADE_TH = { A: "ดีเยี่ยม", B: "ดี", C: "พอใช้", D: "ต้องปรับปรุง" };
+function mountCard(item) {
+  const card = item.card;
+  card.innerHTML = renderCard(item);
+  $(".dl-one", card).addEventListener("click", () => downloadPdf([item]));
+  card.querySelectorAll(".thumbs img, .photo img").forEach((img) => img.addEventListener("click", () => lightbox(img.src)));
+}
 
-const PANEL_TH = {
-  whiteness: ["ความขาวของเส้นใย", "สีเขียว = เส้นใยสีขาว"],
-  fluffiness: ["ความฟูของเส้นใย", "สีสว่าง = เส้นใยฟูละเอียด"],
-  contamination: ["แผนที่การปนเปื้อน", "ดูสีตามคำอธิบายด้านล่าง"],
-  color_ratio: ["บริเวณสีผิดปกติ", "เหลือง · แดง · น้ำเงิน"],
-  shape: ["รูปทรงโคโลนี", "เส้นส้ม = ขอบโคโลนี"],
-};
+/* ----------------------------------------------------------------- wording */
+const PANEL_KEYS = ["whiteness", "fluffiness", "contamination", "color_ratio", "shape"];
+const REPORT_PANEL_KEYS = ["original", ...PANEL_KEYS];
 
-const PANEL_EN = {
-  original: ["Original image", "Plate outline, colony axes and 1 cm scale bar"],
-  whiteness: ["Whiteness", "Green overlay marks white mycelium"],
-  fluffiness: ["Hyphal texture (fluffiness)", "Brighter colour = finer, fluffier hyphae"],
-  contamination: ["Contamination map", "Classification of every pixel on the plate"],
-  color_ratio: ["Colour anomalies", "Yellow = exposed agar, red = pigment, blue = ink"],
-  shape: ["Colony shape", "Orange = colony edge, cyan = ideal circle, blue = plate"],
-};
-
-function reasonText(code, r, lang) {
+function reasonText(code, r, lng = lang) {
   const c = r.config, m = r.metrics, k = r.contamination;
-  const th = {
-    "Contaminated": `พบบริเวณที่อาจปนเปื้อน ${fmt(k.contamination)}% (เกณฑ์ไม่เกิน ${c.max_contamination}%)`,
-    "Agar Exposed": `เส้นใยคลุมอาหารวุ้นไม่ทั่ว วุ้นเปลือย ${fmt(k.agar)}% (เกณฑ์ไม่เกิน ${c.max_agar}%)`,
-    "Low Growth": `โคโลนีเจริญน้อย ครอบคลุม ${fmt(m.growth)}% ของจาน (เกณฑ์อย่างน้อย ${c.min_growth}%)`,
-    "Check Shape": `รูปทรงโคโลนีไม่สม่ำเสมอ ความกลม ${fmt(m.iou * 100, 0)}% (เกณฑ์อย่างน้อย ${fmt(c.min_iou * 100, 0)}%)`,
-    "Low Score": `คะแนนรวม ${fmt(r.score)} ต่ำกว่าเกณฑ์ ${c.min_score}`,
-  };
-  const en = {
-    "Contaminated": `Pigmented (possible contaminant) area ${fmt(k.contamination)} % exceeds the limit of ${c.max_contamination} %`,
-    "Agar Exposed": `Exposed agar ${fmt(k.agar)} % exceeds the limit of ${c.max_agar} %`,
-    "Low Growth": `Plate coverage ${fmt(m.growth)} % is below the minimum of ${c.min_growth} %`,
-    "Check Shape": `Shape conformity ${fmt(m.iou, 2)} is below the minimum of ${fmt(c.min_iou, 2)}`,
-    "Low Score": `Overall score ${fmt(r.score)} is below the minimum of ${c.min_score}`,
-  };
-  return (lang === "en" ? en : th)[code] || code;
+  const p = {
+    "Contaminated": { v: fmt(k.contamination), lim: c.max_contamination },
+    "Agar Exposed": { v: fmt(k.agar), lim: c.max_agar },
+    "Low Growth": { v: fmt(m.growth), lim: c.min_growth },
+    "Check Shape": { v: fmt(m.iou * 100, 0), lim: fmt(c.min_iou * 100, 0) },
+    "Low Score": { v: fmt(r.score), lim: c.min_score },
+  }[code];
+  return p ? t(`reason.${code}`, p, lng) : code;
 }
 
 /* ------------------------------------------------------------------ UI card */
 function tile({ label, value, unit, pct, limit, tickPct, dir }) {
   // dir: "min" (value must be >= limit), "max" (<= limit) or undefined (information only)
-  let cls = "", crit = "ใช้ประกอบคะแนน", state = "";
+  let cls = "", crit = t("tile.info"), state = "";
   if (dir) {
     const ok = dir === "min" ? value >= limit : value <= limit;
     cls = ok ? "pass" : "fail";
-    crit = `เกณฑ์ ${dir === "min" ? "≥" : "≤"} ${limit}${unit}`;
-    state = ok ? `<span class="ok">✓ ผ่าน</span>` : `<span class="ng">✕ ไม่ผ่าน</span>`;
+    crit = t("tile.crit", { op: dir === "min" ? "≥" : "≤", limit, unit });
+    state = ok ? `<span class="ok">${t("tile.ok")}</span>` : `<span class="ng">${t("tile.ng")}</span>`;
   }
   const clamp = (x) => Math.max(0, Math.min(100, x));
   const tick = dir ? `<u style="left:calc(${clamp(tickPct ?? limit)}% - 1px)"></u>` : "";
   return `
-    <div class="tile">
+    <div class="pure-u-1 pure-u-sm-1-2 pure-u-xl-1-3"><div class="tile">
       <div class="label">${label}</div>
       <div class="value">${fmt(value)}<small> ${unit}</small></div>
       <div class="meter ${cls}"><i style="width:${clamp(pct ?? value)}%"></i>${tick}</div>
       <div class="crit"><span>${crit}</span>${state}</div>
-    </div>`;
+    </div></div>`;
 }
 
 function renderCard(item) {
@@ -217,16 +264,18 @@ function renderCard(item) {
   const pass = r.passed;
   const panels = Object.fromEntries(r.panels.map((p) => [p.key, p.src]));
   const reasons = r.reasons.length
-    ? r.reasons.map((x) => `<li>${esc(reasonText(x.code, r, "th"))}</li>`).join("")
-    : `<li class="ok">ผ่านเกณฑ์คุณภาพครบทุกข้อ</li>`;
-  const size = r.colony.detected ? `${fmt(r.colony.width_cm)} × ${fmt(r.colony.height_cm)} ซม.` : "ไม่พบโคโลนี";
+    ? r.reasons.map((x) => `<li>${esc(reasonText(x.code, r))}</li>`).join("")
+    : `<li class="ok">${t("reasons.ok")}</li>`;
+  const size = r.colony.detected
+    ? t("size.value", { w: fmt(r.colony.width_cm), h: fmt(r.colony.height_cm) })
+    : t("size.none");
   // contamination limits are small (a few %), so scale that meter to twice the limit
   const contamScale = Math.max(c.max_contamination * 2, 1);
-  const thumbs = Object.entries(PANEL_TH)
-    .map(([key, [title, hint]]) => `
-      <figure>
-        <img src="${panels[key]}" alt="${esc(title)}" loading="lazy" />
-        <figcaption>${esc(title)}<span>${esc(hint)}</span></figcaption>
+  const thumbs = PANEL_KEYS
+    .map((key) => `
+      <figure class="pure-u-1-2 pure-u-sm-1-3 pure-u-lg-1-5">
+        <img src="${panels[key]}" alt="${esc(t(`panel.${key}`))}" loading="lazy" />
+        <figcaption>${esc(t(`panel.${key}`))}<span>${esc(t(`panel.${key}.h`))}</span></figcaption>
       </figure>`)
     .join("");
 
@@ -234,50 +283,50 @@ function renderCard(item) {
     <div class="card-head">
       <div>
         <h2>${esc(r.name)}</h2>
-        <div class="sub">ตรวจเมื่อ ${item.analyzedAt.toLocaleString("th-TH")} · เลขที่รายงาน ${item.reportNo}</div>
+        <div class="sub">${esc(t("card.meta", { date: item.analyzedAt.toLocaleString(LOCALE[lang]), no: item.reportNo }))}</div>
       </div>
-      <button class="btn primary dl-one">
+      <button class="pure-button pure-button-primary dl-one">
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        ดาวน์โหลดรายงาน PDF
+        ${t("btn.pdfOne")}
       </button>
     </div>
-    <div class="card-body">
-      <figure class="photo" style="margin:0">
-        <img src="${panels.original}" alt="ภาพจานเพาะเชื้อ" />
-        <figcaption>ขนาดโคโลนี ${size} · จานขนาด ${c.plate_cm} ซม.</figcaption>
+    <div class="card-body pure-g gutter">
+      <figure class="photo pure-u-1 pure-u-md-5-12">
+        <img src="${panels.original}" alt="${esc(t("photo.alt"))}" />
+        <figcaption>${esc(t("photo.caption", { size, plate: c.plate_cm }))}</figcaption>
       </figure>
-      <div>
+      <div class="pure-u-1 pure-u-md-7-12">
         <div class="verdict ${pass ? "pass" : "fail"}">
           <div class="v-icon" aria-hidden="true">${pass ? "✓" : "✕"}</div>
           <div class="v-text">
-            <b>${pass ? "ผ่าน" : "ไม่ผ่าน"}</b>
-            <span>${pass ? "ตัวอย่างนี้ได้มาตรฐานคุณภาพ" : "ตัวอย่างนี้ไม่ได้มาตรฐานคุณภาพ"}</span>
+            <b>${t(pass ? "v.pass" : "v.fail")}</b>
+            <span>${t(pass ? "v.passSub" : "v.failSub")}</span>
           </div>
           <div class="score">
             <div class="hero">${fmt(r.score)}<small> /100</small></div>
-            <div class="grade">เกรด ${r.grade} · ${GRADE_TH[r.grade] || ""}</div>
+            <div class="grade">${t("grade", { g: r.grade, label: t(`grade.${r.grade}`) })}</div>
           </div>
         </div>
         <ul class="reasons">${reasons}</ul>
-        <div class="tiles">
-          ${tile({ label: "พื้นที่เจริญบนจาน", value: m.growth, unit: "%", limit: c.min_growth, dir: "min" })}
-          ${tile({ label: "การปนเปื้อน", value: k.contamination, unit: "%", pct: (k.contamination / contamScale) * 100, limit: c.max_contamination, tickPct: (c.max_contamination / contamScale) * 100, dir: "max" })}
-          ${tile({ label: "วุ้นเปลือย (เส้นใยไม่คลุม)", value: k.agar, unit: "%", limit: c.max_agar, dir: "max" })}
-          ${tile({ label: "ความกลมของโคโลนี", value: m.iou * 100, unit: "%", limit: +(c.min_iou * 100).toFixed(0), dir: "min" })}
-          ${tile({ label: "ความขาวของเส้นใย", value: m.whiteness, unit: "%" })}
-          ${tile({ label: "ความฟูของเส้นใย", value: m.fluffiness, unit: "%" })}
+        <div class="tiles pure-g gutter">
+          ${tile({ label: t("tile.growth"), value: m.growth, unit: "%", limit: c.min_growth, dir: "min" })}
+          ${tile({ label: t("tile.contam"), value: k.contamination, unit: "%", pct: (k.contamination / contamScale) * 100, limit: c.max_contamination, tickPct: (c.max_contamination / contamScale) * 100, dir: "max" })}
+          ${tile({ label: t("tile.agar"), value: k.agar, unit: "%", limit: c.max_agar, dir: "max" })}
+          ${tile({ label: t("tile.round"), value: m.iou * 100, unit: "%", limit: +(c.min_iou * 100).toFixed(0), dir: "min" })}
+          ${tile({ label: t("tile.white"), value: m.whiteness, unit: "%" })}
+          ${tile({ label: t("tile.fluffy"), value: m.fluffiness, unit: "%" })}
         </div>
       </div>
     </div>
     <div class="gallery">
-      <h3>ภาพประกอบการวิเคราะห์</h3>
-      <div class="thumbs">${thumbs}</div>
+      <h3>${t("gallery.title")}</h3>
+      <div class="thumbs pure-g gutter">${thumbs}</div>
       <div class="legend">
-        <span><i style="background:#fff"></i>เส้นใยปกติ</span>
-        <span><i style="background:#f0c814"></i>วุ้นเปลือย</span>
-        <span><i style="background:#d72828"></i>อาจปนเปื้อน</span>
-        <span><i style="background:#3c5ad2"></i>หมึก / ปากกา (ไม่นับ)</span>
-        <span><i style="background:#5f5f5f"></i>พื้นที่มืด</span>
+        <span><i style="background:#fff"></i>${t("legend.clean")}</span>
+        <span><i style="background:#f0c814"></i>${t("legend.agar")}</span>
+        <span><i style="background:#d72828"></i>${t("legend.contam")}</span>
+        <span><i style="background:#3c5ad2"></i>${t("legend.ink")}</span>
+        <span><i style="background:#5f5f5f"></i>${t("legend.dark")}</span>
       </div>
     </div>`;
 }
@@ -288,15 +337,15 @@ function renderSummary() {
   const nPass = results.filter((x) => x.report.passed).length;
   $("#n-pass").textContent = nPass;
   $("#n-fail").textContent = results.length - nPass;
-  $("#n-total").textContent = `จากทั้งหมด ${results.length} ภาพ`;
+  $("#n-total").textContent = t("sum.total", { n: results.length });
   $("#summary-body").innerHTML = results
     .map(({ id, report: r }) => `
       <tr data-target="r-${id}">
         <td>${esc(r.name)}</td>
-        <td><span class="status ${r.passed ? "pass" : "fail"}">${r.passed ? "✓ ผ่าน" : "✕ ไม่ผ่าน"}</span></td>
+        <td><span class="status ${r.passed ? "pass" : "fail"}">${t(r.passed ? "tile.ok" : "tile.ng")}</span></td>
         <td class="num">${fmt(r.score)}</td>
-        <td>${r.grade} · ${GRADE_TH[r.grade] || ""}</td>
-        <td>${esc(r.reasons.length ? r.reasons.map((x) => reasonText(x.code, r, "th").split(" (")[0]).join(", ") : "—")}</td>
+        <td>${r.grade} · ${t(`grade.${r.grade}`)}</td>
+        <td>${esc(r.reasons.length ? r.reasons.map((x) => t(`reason.short.${x.code}`)).join(", ") : "—")}</td>
       </tr>`)
     .join("");
 }
@@ -342,10 +391,10 @@ $("#clear").addEventListener("click", () => {
 $("#dl-pdf-all").addEventListener("click", () => downloadPdf(results));
 
 /* ---------------------------------------------------------------- PDF report
- * Content follows ISO/IEC 17025:2017 clause 7.8 (reporting of results):
- * title, laboratory, unique report number on every page, page x of y,
- * customer, sample description & dates, method, results with units,
- * requirements, statement of conformity with the decision rule,
+ * Written in the selected interface language. Content follows ISO/IEC 17025:2017
+ * clause 7.8 (reporting of results): title, laboratory, unique report number on
+ * every page, page x of y, customer, sample description & dates, method, results
+ * with units, requirements, statement of conformity with the decision rule,
  * remarks/deviations, authorisation, disclaimer and end-of-report mark. */
 const libPromises = {};
 function loadScript(src) {
@@ -368,145 +417,145 @@ const isoDate = (d) => {
 };
 const dash = (v) => (v ? esc(v) : "—");
 
-function resultRows(r) {
+function resultRows(r, L) {
   const m = r.metrics, k = r.contamination, c = r.config;
-  const judge = (ok) => (ok ? `<span class="r-pass">Pass</span>` : `<span class="r-fail">Fail</span>`);
-  const info = `<span class="r-info">Info</span>`;
+  const judge = (ok) => (ok ? `<span class="r-pass">${L("r.pass")}</span>` : `<span class="r-fail">${L("r.fail")}</span>`);
+  const info = `<span class="r-info">${L("r.info")}</span>`;
   const rows = [
-    ["Colony size (width × height)", r.colony.detected ? `${fmt(r.colony.width_cm)} × ${fmt(r.colony.height_cm)}` : "not detected", "cm", "—", info],
-    ["Plate coverage (mycelial growth)", fmt(m.growth), "%", `≥ ${c.min_growth}`, judge(m.growth >= c.min_growth)],
-    ["Pigmented area (possible contamination)", fmt(k.contamination), "%", `≤ ${c.max_contamination}`, judge(k.contamination <= c.max_contamination)],
-    ["Exposed agar", fmt(k.agar), "%", `≤ ${c.max_agar}`, judge(k.agar <= c.max_agar)],
-    ["Shape conformity (IoU with ideal circle)", fmt(m.iou, 2), "—", `≥ ${fmt(c.min_iou, 2)}`, judge(!r.colony.detected || m.iou >= c.min_iou)],
-    ["Whiteness index", fmt(m.whiteness), "%", "—", info],
-    ["Fluffiness index (hyphal texture)", fmt(m.fluffiness), "%", "—", info],
-    ["Circularity", fmt(m.circularity), "%", "—", info],
-    ["Overall quality score", fmt(r.score), "/100", `≥ ${c.min_score}`, judge(r.score >= c.min_score)],
-    ["Quality grade", `${r.grade} (${r.grade_label})`, "—", "—", info],
+    [L("r.row.size"), r.colony.detected ? `${fmt(r.colony.width_cm)} × ${fmt(r.colony.height_cm)}` : L("r.notDetected"), L("r.cm"), "—", info],
+    [L("r.row.growth"), fmt(m.growth), "%", `≥ ${c.min_growth}`, judge(m.growth >= c.min_growth)],
+    [L("r.row.contam"), fmt(k.contamination), "%", `≤ ${c.max_contamination}`, judge(k.contamination <= c.max_contamination)],
+    [L("r.row.agar"), fmt(k.agar), "%", `≤ ${c.max_agar}`, judge(k.agar <= c.max_agar)],
+    [L("r.row.iou"), fmt(m.iou, 2), "—", `≥ ${fmt(c.min_iou, 2)}`, judge(!r.colony.detected || m.iou >= c.min_iou)],
+    [L("r.row.white"), fmt(m.whiteness), "%", "—", info],
+    [L("r.row.fluffy"), fmt(m.fluffiness), "%", "—", info],
+    [L("r.row.circ"), fmt(m.circularity), "%", "—", info],
+    [L("r.row.score"), fmt(r.score), "/100", `≥ ${c.min_score}`, judge(r.score >= c.min_score)],
+    [L("r.row.grade"), `${r.grade} (${L(`grade.${r.grade}`)})`, "—", "—", info],
   ];
   return rows
     .map(([p, v, u, req, a]) => `<tr><td>${p}</td><td class="n">${v}</td><td class="c">${u}</td><td class="c">${req}</td><td class="c">${a}</td></tr>`)
     .join("");
 }
 
-function reportPages(item, info, issued) {
+function reportPages(item, info, issued, lng) {
+  const L = (key, params) => t(key, params, lng);
   const r = item.report, c = r.config, w = r.weights;
   const panels = Object.fromEntries(r.panels.map((p) => [p.key, p.src]));
   const total = 2;
   const head = `
     <div class="r-head">
-      <div class="r-lab"><b>${info.labName ? esc(info.labName) : "Laboratory name not specified"}</b><span>${dash(info.labAddress)}</span></div>
-      <div class="r-id">TEST REPORT<b>${item.reportNo}</b>Issue date: ${isoDate(issued)}</div>
+      <div class="r-lab"><b>${info.labName ? esc(info.labName) : L("r.labNone")}</b><span>${dash(info.labAddress)}</span></div>
+      <div class="r-id">${L("r.testReport")}<b>${item.reportNo}</b>${L("r.issue", { date: isoDate(issued) })}</div>
     </div>`;
   const foot = (n) => `
     <div class="r-foot">
-      <span class="disc">The results relate only to the item tested. This report shall not be reproduced except in full
-      without the written approval of the laboratory.</span>
-      <span>Report No. ${item.reportNo}<br/>Page ${n} of ${total}</span>
+      <span class="disc">${L("r.disclaimer")}</span>
+      <span>${L("r.reportNo", { no: item.reportNo })}<br/>${L("r.page", { n, t: total })}</span>
     </div>`;
   const reasons = r.reasons.length
-    ? `<ul>${r.reasons.map((x) => `<li>${esc(reasonText(x.code, r, "en"))}</li>`).join("")}</ul>`
-    : `<div>All requirements in Section 3 are fulfilled.</div>`;
+    ? `<ul>${r.reasons.map((x) => `<li>${esc(reasonText(x.code, r, lng))}</li>`).join("")}</ul>`
+    : `<div>${L("r.allMet")}</div>`;
+  const credit = `${esc(L("credit.line1", { name: L("credit.name") }))}<br/>${esc(L("credit.line2"))}`;
 
   const page1 = `
-    <div class="rpage">
+    <div class="rpage" lang="${lng}">
       ${head}
-      <div class="r-title">Fungal Culture Quality Assessment — Test Report</div>
-      <div class="r-subtitle">Automated image-based evaluation of mycelial growth on a culture plate</div>
+      <div class="r-title">${L("r.title")}</div>
+      <div class="r-subtitle">${L("r.subtitle")}</div>
 
       <div class="r-sec">
-        <h4>1. Customer and sample information</h4>
+        <h4>${L("r.s1")}</h4>
         <div class="r-grid">
           <table class="r-kv grow">
-            <tr><td>Customer</td><td>${dash(info.customer)}</td></tr>
-            <tr><td>Sample ID / test item</td><td>${esc(stem(r.name))} — digital photograph (${esc(r.name)})</td></tr>
-            <tr><td>Organism / strain</td><td>${dash(info.species)}</td></tr>
-            <tr><td>Batch / lot</td><td>${dash(info.batch)}</td></tr>
-            <tr><td>Culture medium</td><td>${dash(info.medium)}</td></tr>
-            <tr><td>Incubation conditions</td><td>${dash(info.incubation)}</td></tr>
-            <tr><td>Inoculation date</td><td>${isoDate(info.inoculationDate)}</td></tr>
-            <tr><td>Date of analysis</td><td>${isoDate(item.analyzedAt)}</td></tr>
+            <tr><td>${L("r.customer")}</td><td>${dash(info.customer)}</td></tr>
+            <tr><td>${L("r.sampleId")}</td><td>${esc(stem(r.name))} — ${L("r.digitalPhoto")} (${esc(r.name)})</td></tr>
+            <tr><td>${L("r.organism")}</td><td>${dash(info.species)}</td></tr>
+            <tr><td>${L("r.batch")}</td><td>${dash(info.batch)}</td></tr>
+            <tr><td>${L("r.medium")}</td><td>${dash(info.medium)}</td></tr>
+            <tr><td>${L("r.incubation")}</td><td>${dash(info.incubation)}</td></tr>
+            <tr><td>${L("r.inoculation")}</td><td>${isoDate(info.inoculationDate)}</td></tr>
+            <tr><td>${L("r.analysisDate")}</td><td>${isoDate(item.analyzedAt)}</td></tr>
           </table>
-          <div class="r-photo"><img src="${panels.original}" alt="" /><span>Fig. 1 — Test item with plate outline and 1 cm scale bar</span></div>
+          <div class="r-photo"><img src="${panels.original}" alt="" /><span>${L("r.fig1")}</span></div>
         </div>
       </div>
 
       <div class="r-sec">
-        <h4>2. Test method</h4>
-        <p class="r-text">Automated image analysis, Precision QC v${APP_VERSION}. Top-view photograph; plate diameter ${c.plate_cm} cm
-        used as length reference; pixels classified in CIE L*a*b* colour space after lighting compensation. Overall score is the
-        weighted sum of growth ${Math.round(w.growth * 100)} %, whiteness ${Math.round(w.whiteness * 100)} %,
-        fluffiness ${Math.round(w.fluffiness * 100)} % and shape ${Math.round(w.shape * 100)} %.</p>
+        <h4>${L("r.s2")}</h4>
+        <p class="r-text">${L("r.method", {
+          ver: APP_VERSION, plate: c.plate_cm, wg: Math.round(w.growth * 100), ww: Math.round(w.whiteness * 100),
+          wf: Math.round(w.fluffiness * 100), ws: Math.round(w.shape * 100),
+        })}</p>
       </div>
 
       <div class="r-sec">
-        <h4>3. Results</h4>
+        <h4>${L("r.s3")}</h4>
         <table class="r-table">
-          <thead><tr><th>Parameter</th><th class="n">Result</th><th class="c">Unit</th><th class="c">Requirement</th><th class="c">Assessment</th></tr></thead>
-          <tbody>${resultRows(r)}</tbody>
+          <thead><tr><th>${L("r.param")}</th><th class="n">${L("r.result")}</th><th class="c">${L("r.unit")}</th><th class="c">${L("r.req")}</th><th class="c">${L("r.assess")}</th></tr></thead>
+          <tbody>${resultRows(r, L)}</tbody>
         </table>
-        <div class="r-small">Grade scale: A ≥ 80 (Excellent) · B ≥ 65 (Good) · C ≥ 50 (Fair) · D &lt; 50 (Poor). “Info” = reported for information only, no requirement.</div>
+        <div class="r-small">${L("r.gradeScale")}</div>
       </div>
 
       <div class="r-sec">
-        <h4>4. Statement of conformity</h4>
+        <h4>${L("r.s4")}</h4>
         <div class="r-conform ${r.passed ? "pass" : "fail"}">
           <div class="mark">${r.passed ? "✓" : "✕"}</div>
-          <div><b>${r.passed ? "PASS — The sample CONFORMS to the specified requirements" : "FAIL — The sample DOES NOT CONFORM to the specified requirements"}</b>${reasons}</div>
+          <div><b>${L(r.passed ? "r.conformPass" : "r.conformFail")}</b>${reasons}</div>
         </div>
-        <div class="r-small">Decision rule: simple acceptance (ILAC-G8:09/2019); measurement uncertainty not taken into account.
-        The sample conforms only when every requirement in Section 3 is met.</div>
+        <div class="r-small">${L("r.decision")}</div>
       </div>
 
       <div class="r-sec">
-        <h4>5. Remarks and deviations</h4>
-        <p class="r-text">Remarks: ${info.remarks ? esc(info.remarks) : "none"}. Deviations from the test method: none.</p>
+        <h4>${L("r.s5")}</h4>
+        <p class="r-text">${L("r.remarks", { text: info.remarks ? esc(info.remarks) : L("r.none") })}</p>
       </div>
 
       <div class="r-sec">
-        <h4>6. Authorisation</h4>
+        <h4>${L("r.s6")}</h4>
         <div class="r-sign">
-          <div><div class="line"></div><span>Analysed by</span><b>${dash(info.analyst)}</b><span>Date: ${isoDate(item.analyzedAt)}</span></div>
-          <div><div class="line"></div><span>Reviewed and approved by</span><b>${dash(info.approver)}</b><span>Date: ____________</span></div>
+          <div><div class="line"></div><span>${L("r.analysedBy")}</span><b>${dash(info.analyst)}</b><span>${L("r.date", { date: isoDate(item.analyzedAt) })}</span></div>
+          <div><div class="line"></div><span>${L("r.approvedBy")}</span><b>${dash(info.approver)}</b><span>${L("r.date", { date: "____________" })}</span></div>
         </div>
       </div>
       ${foot(1)}
     </div>`;
 
-  const annex = Object.entries(PANEL_EN)
-    .map(([key, [title, hint]], i) => `
-      <figure><img src="${panels[key]}" alt="" /><figcaption><b>A${i + 1}. ${title}</b>${hint}</figcaption></figure>`)
+  const annex = REPORT_PANEL_KEYS
+    .map((key, i) => `
+      <figure><img src="${panels[key]}" alt="" /><figcaption><b>${L("r.annexPrefix")}${i + 1}. ${L(`r.panel.${key}`)}</b>${L(`r.panel.${key}.h`)}</figcaption></figure>`)
     .join("");
   const calib = r.calibration
-    .map((e) => `<tr><td>${e.name}</td><td class="c"><span class="r-sw" style="background:rgb(${e.standard.join(",")})"></span></td>
+    .map((e) => `<tr><td>${L(`r.colour.${e.name}`)}</td><td class="c"><span class="r-sw" style="background:rgb(${e.standard.join(",")})"></span></td>
       <td class="c">${e.sample ? `<span class="r-sw" style="background:rgb(${e.sample.join(",")})"></span>` : "—"}</td>
-      <td class="n">${e.match === null ? "not present" : `${fmt(e.match, 0)} %`}</td></tr>`)
+      <td class="n">${e.match === null ? L("r.notPresent") : `${fmt(e.match, 0)} %`}</td></tr>`)
     .join("");
 
   const page2 = `
-    <div class="rpage">
+    <div class="rpage" lang="${lng}">
       ${head}
       <div class="r-sec">
-        <h4>Annex A — Image analysis</h4>
+        <h4>${L("r.annexA")}</h4>
         <div class="r-panels">${annex}</div>
         <div class="r-legend">
-          Contamination map (A4):
-          <span><i style="background:#fff"></i>clean mycelium</span>
-          <span><i style="background:#f0c814"></i>exposed agar</span>
-          <span><i style="background:#d72828"></i>pigmented / possible contamination</span>
-          <span><i style="background:#3c5ad2"></i>ink or marker (excluded)</span>
-          <span><i style="background:#5f5f5f"></i>dark area</span>
+          ${L("r.legendTitle")}
+          <span><i style="background:#fff"></i>${L("r.legend.clean")}</span>
+          <span><i style="background:#f0c814"></i>${L("r.legend.agar")}</span>
+          <span><i style="background:#d72828"></i>${L("r.legend.contam")}</span>
+          <span><i style="background:#3c5ad2"></i>${L("r.legend.ink")}</span>
+          <span><i style="background:#5f5f5f"></i>${L("r.legend.dark")}</span>
         </div>
       </div>
       <div class="r-sec">
-        <h4>Annex B — Colour reference check</h4>
+        <h4>${L("r.annexB")}</h4>
         <table class="r-table" style="width:60%">
-          <thead><tr><th>Colour class</th><th class="c">Reference</th><th class="c">Sample</th><th class="n">Match</th></tr></thead>
+          <thead><tr><th>${L("r.colourClass")}</th><th class="c">${L("r.reference")}</th><th class="c">${L("r.sample")}</th><th class="n">${L("r.match")}</th></tr></thead>
           <tbody>${calib}</tbody>
         </table>
       </div>
-      <div class="r-end">— END OF REPORT —</div>
-      <div class="r-credit">Software: Precision QC v${APP_VERSION} · ${CREDIT_EN}<br/>${CREDIT_TH}</div>
+      <div class="r-end">${L("r.end")}</div>
+      <div class="r-credit">${L("r.software", { ver: APP_VERSION })}<br/>${credit}</div>
       ${foot(2)}
     </div>`;
   return page1 + page2;
@@ -527,9 +576,10 @@ async function waitForImages(root) {
 
 async function downloadPdf(items) {
   if (!items.length) return;
+  const lng = lang;
   const overlay = $("#busy");
   overlay.hidden = false;
-  $("#busy-text").textContent = "กำลังสร้างรายงาน PDF…";
+  $("#busy-text").textContent = t("busy.pdf");
   const host = document.createElement("div");
   host.className = "report-host";
   document.body.appendChild(host);
@@ -542,8 +592,8 @@ async function downloadPdf(items) {
     const issued = new Date();
     let first = true;
     for (const [i, item] of items.entries()) {
-      $("#busy-text").textContent = `กำลังสร้างรายงาน PDF… (${i + 1}/${items.length})`;
-      host.innerHTML = reportPages(item, info, issued);
+      $("#busy-text").textContent = t("busy.pdfN", { i: i + 1, n: items.length });
+      host.innerHTML = reportPages(item, info, issued, lng);
       await waitForImages(host);
       for (const page of host.querySelectorAll(".rpage")) {
         fitPage(page);
@@ -554,22 +604,23 @@ async function downloadPdf(items) {
       }
     }
     pdf.setProperties({
-      title: items.length === 1 ? `Test report ${items[0].reportNo}` : "Fungal culture QC test reports",
+      title: items.length === 1 ? t("r.pdfTitleOne", { no: items[0].reportNo }, lng) : t("r.pdfTitleMany", {}, lng),
       subject: "Fungal culture quality assessment",
       creator: `Precision QC v${APP_VERSION}`,
-      author: CREDIT_EN.replace("Developed by ", ""),
+      author: `${t("credit.name", {}, lng)}, ${t("credit.line2", {}, lng)}`,
     });
     const name = items.length === 1
-      ? `${items[0].reportNo}_${stem(items[0].report.name)}.pdf`
-      : `Precision-QC_reports_${isoDate(issued)}.pdf`;
+      ? `${items[0].reportNo}_${stem(items[0].report.name)}_${lng.toUpperCase()}.pdf`
+      : `Precision-QC_reports_${isoDate(issued)}_${lng.toUpperCase()}.pdf`;
     download(name, pdf.output("blob"));
   } catch (err) {
     console.error(err);
-    alert("สร้างรายงาน PDF ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง");
+    alert(t("alert.pdfFail"));
   } finally {
     host.remove();
     overlay.hidden = true;
   }
 }
 
+applyLang(lang);
 boot();
