@@ -11,6 +11,7 @@ const PDF_LIBS = [
 const CFG_KEY = "precision-qc-config";
 const INFO_KEY = "precision-qc-report-info";
 const LANG_KEY = "precision-qc-lang";
+const THEME_KEY = "precision-qc-theme";
 const LANGS = ["th", "en", "zh"];
 const LOCALE = { th: "th-TH", en: "en-GB", zh: "zh-CN" };
 const APP_VERSION = "1.2";
@@ -69,6 +70,28 @@ function applyLang(next) {
 }
 
 document.querySelectorAll(".lang-switch button").forEach((b) => b.addEventListener("click", () => applyLang(b.dataset.lang)));
+
+/* ------------------------------------------------------------------ theme
+ * "light" / "dark" set html[data-theme]; "auto" removes it and follows the OS. */
+function currentTheme() {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return v === "light" || v === "dark" ? v : "auto";
+  } catch (_) { return "auto"; }
+}
+
+function applyTheme(choice) {
+  if (choice === "light" || choice === "dark") document.documentElement.setAttribute("data-theme", choice);
+  else document.documentElement.removeAttribute("data-theme");
+  try {
+    if (choice === "auto") localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, choice);
+  } catch (_) { /* ignore */ }
+  document.querySelectorAll(".theme-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeChoice === choice)));
+}
+
+document.querySelectorAll(".theme-switch button").forEach((b) => b.addEventListener("click", () => applyTheme(b.dataset.themeChoice)));
+applyTheme(currentTheme());
 
 /* --------------------------------------------------------------------- boot */
 async function boot() {
@@ -147,7 +170,7 @@ function renderSamples(names) {
   box.innerHTML = "";
   for (const n of names) {
     const b = document.createElement("button");
-    b.className = "btn chip";
+    b.className = "pure-button chip";
     b.textContent = stem(n).replace(/_/g, " ");
     b.disabled = true;
     b.addEventListener("click", async () => {
@@ -226,12 +249,12 @@ function tile({ label, value, unit, pct, limit, tickPct, dir }) {
   const clamp = (x) => Math.max(0, Math.min(100, x));
   const tick = dir ? `<u style="left:calc(${clamp(tickPct ?? limit)}% - 1px)"></u>` : "";
   return `
-    <div class="tile">
+    <div class="pure-u-1 pure-u-sm-1-2 pure-u-xl-1-3"><div class="tile">
       <div class="label">${label}</div>
       <div class="value">${fmt(value)}<small> ${unit}</small></div>
       <div class="meter ${cls}"><i style="width:${clamp(pct ?? value)}%"></i>${tick}</div>
       <div class="crit"><span>${crit}</span>${state}</div>
-    </div>`;
+    </div></div>`;
 }
 
 function renderCard(item) {
@@ -248,7 +271,7 @@ function renderCard(item) {
   const contamScale = Math.max(c.max_contamination * 2, 1);
   const thumbs = PANEL_KEYS
     .map((key) => `
-      <figure>
+      <figure class="pure-u-1-2 pure-u-sm-1-3 pure-u-lg-1-5">
         <img src="${panels[key]}" alt="${esc(t(`panel.${key}`))}" loading="lazy" />
         <figcaption>${esc(t(`panel.${key}`))}<span>${esc(t(`panel.${key}.h`))}</span></figcaption>
       </figure>`)
@@ -260,17 +283,17 @@ function renderCard(item) {
         <h2>${esc(r.name)}</h2>
         <div class="sub">${esc(t("card.meta", { date: item.analyzedAt.toLocaleString(LOCALE[lang]), no: item.reportNo }))}</div>
       </div>
-      <button class="btn primary dl-one">
+      <button class="pure-button pure-button-primary dl-one">
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         ${t("btn.pdfOne")}
       </button>
     </div>
-    <div class="card-body">
-      <figure class="photo" style="margin:0">
+    <div class="card-body pure-g gutter">
+      <figure class="photo pure-u-1 pure-u-md-5-12">
         <img src="${panels.original}" alt="${esc(t("photo.alt"))}" />
         <figcaption>${esc(t("photo.caption", { size, plate: c.plate_cm }))}</figcaption>
       </figure>
-      <div>
+      <div class="pure-u-1 pure-u-md-7-12">
         <div class="verdict ${pass ? "pass" : "fail"}">
           <div class="v-icon" aria-hidden="true">${pass ? "✓" : "✕"}</div>
           <div class="v-text">
@@ -283,7 +306,7 @@ function renderCard(item) {
           </div>
         </div>
         <ul class="reasons">${reasons}</ul>
-        <div class="tiles">
+        <div class="tiles pure-g gutter">
           ${tile({ label: t("tile.growth"), value: m.growth, unit: "%", limit: c.min_growth, dir: "min" })}
           ${tile({ label: t("tile.contam"), value: k.contamination, unit: "%", pct: (k.contamination / contamScale) * 100, limit: c.max_contamination, tickPct: (c.max_contamination / contamScale) * 100, dir: "max" })}
           ${tile({ label: t("tile.agar"), value: k.agar, unit: "%", limit: c.max_agar, dir: "max" })}
@@ -295,7 +318,7 @@ function renderCard(item) {
     </div>
     <div class="gallery">
       <h3>${t("gallery.title")}</h3>
-      <div class="thumbs">${thumbs}</div>
+      <div class="thumbs pure-g gutter">${thumbs}</div>
       <div class="legend">
         <span><i style="background:#fff"></i>${t("legend.clean")}</span>
         <span><i style="background:#f0c814"></i>${t("legend.agar")}</span>
