@@ -103,3 +103,18 @@ def test_report_image_and_cli(tmp_path):
     assert (tmp_path / "white_colony_report.png").exists()
     summary = json.loads((tmp_path / "summary.json").read_text())
     assert len(summary) == 4
+
+
+def test_index_arrays_are_intp_for_32bit_pyodide(monkeypatch):
+    """Pyodide is wasm32: np.bincount rejects int64 indices there. Simulate that."""
+    real_bincount = np.bincount
+
+    def strict_bincount(x, *args, **kwargs):
+        if np.asarray(x).dtype != np.intp:
+            raise TypeError(f"Cannot cast array data from dtype('{np.asarray(x).dtype}') to intp")
+        return real_bincount(x, *args, **kwargs)
+
+    monkeypatch.setattr(np, "bincount", strict_bincount)
+    monkeypatch.setattr(np, "intp", np.int32)  # wasm32 pointer size
+    rep = analyze(plate()).report
+    assert rep["result"] == "PASS"
