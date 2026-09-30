@@ -45,7 +45,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "IBM Plex Sans Thai", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   line-height: 1.55;
 }
 
@@ -60,6 +60,15 @@ body {
 .brand h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: .3px; }
 .brand p { margin: 0; opacity: .78; font-size: 14px; }
 
+.top-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.lang-switch { display: inline-flex; background: rgba(255, 255, 255, .1); border-radius: 999px; padding: 3px; }
+.lang-switch button {
+  font: inherit; font-size: 13px; color: #fff; background: transparent; border: 0; cursor: pointer;
+  padding: 4px 12px; border-radius: 999px; opacity: .75; transition: background .15s, opacity .15s;
+}
+.lang-switch button:hover { opacity: 1; }
+.lang-switch button[aria-pressed="true"] { background: #fff; color: var(--navy); opacity: 1; font-weight: 600; }
+.lang-switch button:focus-visible { outline: 2px solid #8fd3a4; outline-offset: 1px; }
 .engine {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 14px; border-radius: 999px;
@@ -266,7 +275,7 @@ footer .privacy { margin-bottom: 14px; }
 .report-host { position: fixed; left: 0; top: 0; z-index: -10; pointer-events: none; }
 .rpage {
   width: 794px; height: 1123px; background: #fff; color: #1a1f26;
-  font-family: "IBM Plex Sans Thai", "Helvetica Neue", Arial, sans-serif;
+  font-family: "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: 11px; line-height: 1.4;
   padding: 38px 48px 0; position: relative; overflow: hidden;
 }
