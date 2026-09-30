@@ -1,0 +1,8 @@
+{
+  "name": "Precision QC",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "postCreateCommand": "pip install -r requirements-dev.txt",
+  "postAttachCommand": "python scripts/build_site.py --serve",
+  "forwardPorts": [8000],
+  "portsAttributes": { "8000": { "label": "Precision QC web", "onAutoForward": "openBrowser" } }
+}
