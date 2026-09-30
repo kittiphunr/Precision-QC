@@ -109,3 +109,11 @@ inputs/              วางภาพที่นี่เพื่อให�
 tests/               pytest
 .github/workflows/   CI, QC Batch, Pages deploy
 ```
+
+## ผู้พัฒนา / Developer
+
+**นายกิตติพันธ์ รัตนคร** นักวิชาการคอมพิวเตอร์
+มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่
+
+**Mr. Kittiphun Rattanakorn**, Computer Technical Officer
+Mahachulalongkornrajavidyalaya University, Phrae Campus

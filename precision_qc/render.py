@@ -275,6 +275,9 @@ def report_image(an: Analysis, tile: int = 380) -> Image.Image:
         d.text((x + 6, ry), k, fill=(30, 30, 30), font=f_txt)
         d.text((x + 190, ry), v, fill=color if k == "Status" else (30, 30, 30), font=f_txt)
         ry += 30
+    from . import CREDIT  # default fonts have no Thai glyphs, so English only here
+
+    d.text((pad, H - 30), CREDIT, fill=(110, 110, 110), font=_font(13), anchor="lm")
     d.text(
         (W - pad, H - 30),
         f"Overall Score: {rep['score']} / 100   (Grade {rep['grade']} - {rep['grade_label']})",
