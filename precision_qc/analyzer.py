@@ -227,12 +227,12 @@ def detect_dish(gray: np.ndarray):
     mn = min(h, w)
     radii = np.arange(max(8, int(0.22 * mn)), int(0.62 * mn) + 1, 2)
     best_score = np.zeros(len(radii))
-    best_pos = np.zeros(len(radii), dtype=np.int64)
+    best_pos = np.zeros(len(radii), dtype=np.intp)
     for i, r in enumerate(radii):
         acc = np.zeros(h * w, dtype=np.float64)
         for sgn in (1.0, -1.0):
-            cx = np.rint(xs + sgn * r * ux).astype(np.int64)
-            cy = np.rint(ys + sgn * r * uy).astype(np.int64)
+            cx = np.rint(xs + sgn * r * ux).astype(np.intp)
+            cy = np.rint(ys + sgn * r * uy).astype(np.intp)
             ok = (cx >= 0) & (cx < w) & (cy >= 0) & (cy < h)
             acc += np.bincount(cy[ok] * w + cx[ok], minlength=h * w)
         acc = box_blur(acc.reshape(h, w), 3) * 9.0 / (2.0 * math.pi * r)
@@ -285,8 +285,8 @@ def radial_profile(occ: np.ndarray, cx: float, cy: float, r_max: float, n_ang: i
     H, W = occ.shape
     steps = np.arange(0.0, max(r_max, 1.0), 1.0)
     ang = np.linspace(0.0, 2.0 * math.pi, n_ang, endpoint=False)
-    xi = np.rint(cx + np.cos(ang)[:, None] * steps).astype(np.int64)
-    yi = np.rint(cy + np.sin(ang)[:, None] * steps).astype(np.int64)
+    xi = np.rint(cx + np.cos(ang)[:, None] * steps).astype(np.intp)
+    yi = np.rint(cy + np.sin(ang)[:, None] * steps).astype(np.intp)
     inside = (xi >= 0) & (xi < W) & (yi >= 0) & (yi < H)
     vals = np.zeros(xi.shape, dtype=bool)
     vals[inside] = occ[yi[inside], xi[inside]]
