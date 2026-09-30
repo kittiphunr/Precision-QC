@@ -6,6 +6,7 @@
 
 import argparse
 import functools
+import hashlib
 import http.server
 import json
 import shutil
@@ -28,9 +29,16 @@ def build(out: Path) -> Path:
     (out / "samples").mkdir()
     for name in samples:
         shutil.copy2(ROOT / "samples" / name, out / "samples" / name)
-    (out / "manifest.json").write_text(json.dumps({"py_files": py_files, "samples": samples}, indent=2))
+    # content hash of the engine: the web app appends it to every .py URL so a
+    # new deploy is never served from a stale browser / CDN cache
+    digest = hashlib.sha256()
+    for name in py_files:
+        digest.update((ROOT / "precision_qc" / name).read_bytes())
+    build = digest.hexdigest()[:12]
+    manifest = {"build": build, "py_files": py_files, "samples": samples}
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     (out / ".nojekyll").write_text("")
-    print(f"Built {out} ({len(py_files)} python files, {len(samples)} samples)")
+    print(f"Built {out} (build {build}, {len(py_files)} python files, {len(samples)} samples)")
     return out
 
 
