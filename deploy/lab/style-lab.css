@@ -274,16 +274,16 @@ main.wrap { padding-top: 24px; padding-bottom: 44px; display: grid; gap: 20px; }
 .r-sec h4 { margin: 0 0 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #1f3350; border-bottom: 1px solid #d5dae1; padding-bottom: 3px; }
 .r-grid { display: flex; gap: 18px; }
 .r-grid > .grow { flex: 1; min-width: 0; }
-.r-kv { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.5; }
+.r-kv { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.35; }
 .r-kv td { padding: 3.5px 6px; border-bottom: 1px solid #eceff3; vertical-align: top; }
 .r-kv td:first-child { color: #5b6573; width: 42%; }
 .r-photo { width: 180px; flex: none; }
 .r-photo img { width: 180px; display: block; border: 1px solid #d5dae1; }
 .r-photo span { display: block; font-size: 9.5px; color: #5b6573; margin-top: 3px; }
 .r-text { margin: 0; color: #2c3440; }
-.r-table { width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.5; }
-.r-table th { background: #1f3350; color: #fff; font-weight: 600; text-align: left; padding: 5px 8px; }
-.r-table td { padding: 4.5px 8px; border-bottom: 1px solid #e3e7ec; }
+.r-table { width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.25; }
+.r-table th { background: #1f3350; color: #fff; font-weight: 600; text-align: left; padding: 6px 8px; vertical-align: middle; }
+.r-table td { padding: 5px 8px; border-bottom: 1px solid #e3e7ec; vertical-align: middle; }
 .r-table tr:nth-child(even) td { background: #f7f8fa; }
 .r-table .n { text-align: right; font-variant-numeric: tabular-nums; }
 .r-table .c { text-align: center; }
