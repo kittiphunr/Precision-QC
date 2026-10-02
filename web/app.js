@@ -106,6 +106,7 @@ applyTheme(currentTheme());
 
 /* --------------------------------------------------------------------- boot */
 async function boot() {
+  if (window.__QC_DENY__) return; // hosted build: blocked on an unauthorised domain
   try {
     const manifest = await (await fetch("manifest.json", { cache: "no-store" })).json();
     renderSamples(manifest.samples || []);
