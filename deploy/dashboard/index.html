@@ -14,10 +14,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" />
-  <link rel="stylesheet" href="style-dash.css?v=0279bacd5665" />
+  <link rel="stylesheet" href="style-dash.css?v=13cfbfb6a393" />
   <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 </head>
-<body>
+<body class="results-modal">
   <a class="skip" href="#main" data-i18n="upload.title">อัปโหลดภาพจานเพาะเชื้อ</a>
 
   <div class="app">
@@ -142,7 +142,7 @@
             <table class="pure-table pure-table-horizontal">
               <thead><tr>
                 <th data-i18n="th.image">ภาพ</th><th data-i18n="th.result">ผล</th><th class="num" data-i18n="th.score">คะแนน</th>
-                <th data-i18n="th.grade">เกรด</th><th data-i18n="th.note">หมายเหตุ</th>
+                <th data-i18n="th.grade">เกรด</th><th data-i18n="th.note">หมายเหตุ</th><th data-i18n="btn.view">ดูผล</th>
               </tr></thead>
               <tbody id="summary-body"></tbody>
             </table>
@@ -260,11 +260,23 @@
     </aside>
   </div>
 
+  <div id="result-modal" class="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-modal-title" hidden>
+    <div class="rm-dialog">
+      <div class="rm-topbar">
+        <h2 id="result-modal-title" data-i18n="modal.title">ผลการตรวจ</h2>
+        <button type="button" class="rm-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="rm-body"></div>
+    </div>
+  </div>
+
   <div id="busy" class="busy-overlay" hidden>
     <div class="busy-box"><div class="spinner"></div><span id="busy-text"></span></div>
   </div>
 
-  <script src="i18n.js?v=ab1df6704cca"></script>
-  <script src="app.js?v=d2d65dc40944"></script>
+  <script src="i18n.js?v=c702e7601bc5"></script>
+  <script src="app.js?v=945c6b9741aa"></script>
 </body>
 </html>
