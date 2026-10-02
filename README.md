@@ -40,6 +40,19 @@ python scripts/build_site.py --out deploy --lock-domain kittiphun.rut.mcupr.ac.t
 ```
 CI จะแจ้งเตือนถ้าโฟลเดอร์ `deploy/` ไม่ตรงกับโค้ดล่าสุด (โดเมนที่ล็อกอยู่ในไฟล์ `hosting/deploy-domains.txt`)
 
+### สองเวอร์ชันหน้าตา: Pure.css กับ Tailwind CSS
+ทุกครั้งที่ build จะได้เว็บ **สองเวอร์ชัน** จากโค้ดชุดเดียวกัน (ตรรกะการตรวจและรายงาน PDF เหมือนกันทุกอย่าง ต่างกันแค่สไตล์):
+
+| เวอร์ชัน | ที่อยู่ในผลลัพธ์ | ต้นทาง |
+|---|---|---|
+| Pure.css (เดิม) | `deploy/` (หน้าหลัก) | `web/` |
+| Tailwind CSS | `deploy/tw/` | `web-tw/` |
+
+- เปิดใช้งานเวอร์ชัน Tailwind ที่ `https://<โดเมน>/tw/`
+- เวอร์ชัน Tailwind คอมไพล์ CSS จาก `web-tw/src.css` เป็น `tw.css` ตอน build (ต้องมี **Node.js/npx**) และไม่พึ่ง Pure.css CDN
+- จะอัปโหลดเวอร์ชันไหนก็ได้ หรือทั้งคู่ — ถ้าต้องการเฉพาะ Tailwind ให้อัปโหลดเนื้อในโฟลเดอร์ `deploy/tw/`
+- แก้สไตล์เวอร์ชัน Tailwind ได้ที่ `web-tw/src.css` (คลาสคอมโพเนนต์) และ `web-tw/tailwind.config.js` (โทนสี/ฟอนต์)
+
 ### การป้องกันการคัดลอกบนโฮสต์จริง
 โฟลเดอร์ `deploy/` ใส่ระบบป้องกันการคัดลอกไว้แล้ว (ไฟล์ต้นทางใน `web/` ยังอ่านง่ายเหมือนเดิม):
 - **ล็อกโดเมน** — เว็บจะทำงานเฉพาะบนโดเมนที่กำหนด (`--lock-domain`) เท่านั้น บวก `localhost` สำหรับทดสอบ ถ้ามีคนคัดลอกไฟล์ไปวางบนโดเมนอื่นหรือเปิดจากไฟล์ในเครื่อง หน้าเว็บจะขึ้นข้อความแจ้งว่าไม่ได้รับอนุญาตและเครื่องมือตรวจจะไม่เริ่มทำงาน
@@ -140,9 +153,12 @@ precision_qc/        Python engine
   render.py          สร้างภาพ 6 panel และรายงาน PNG
   api.py             JSON bridge ที่เว็บ (Pyodide) เรียกใช้
   cli.py             คำสั่ง batch  (python -m precision_qc)
-web/                 หน้าเว็บ (HTML/CSS/JS) — โหลด Pyodide แล้วเรียก precision_qc.api
+web/                 หน้าเว็บ (เวอร์ชัน Pure.css) — โหลด Pyodide แล้วเรียก precision_qc.api
   i18n.js            ข้อความ 3 ภาษา (ไทย / English / 中文)
-scripts/build_site.py  ประกอบเว็บ + โค้ด Python ลง _site/ สำหรับ GitHub Pages (หรือ deploy/)
+web-tw/              หน้าเว็บ (เวอร์ชัน Tailwind CSS) — ใช้ app.js/i18n.js ชุดเดียวกับ web/
+  src.css            ต้นทาง Tailwind (คอมไพล์เป็น tw.css ตอน build)
+  tailwind.config.js ตั้งค่าธีม/สีของ Tailwind
+scripts/build_site.py  ประกอบเว็บทั้งสองเวอร์ชัน + โค้ด Python ลง _site/ (หรือ deploy/)
 deploy/              ไฟล์พร้อมอัปโหลดขึ้นโฮสต์จริง (สร้างจาก build_site.py — อย่าแก้ไฟล์ในนี้ตรง ๆ)
 hosting/.htaccess    ค่าเซิร์ฟเวอร์ Apache ที่ build ใส่ลงใน deploy/
 hosting/protect.js   ระบบล็อกโดเมน + กันคัดลอก ที่ build ใส่ลงใน deploy/
