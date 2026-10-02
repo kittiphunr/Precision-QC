@@ -129,9 +129,9 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .bento { display: grid; gap: 16px; min-width: 0; }
 .bento > * , #results > * { min-width: 0; }
 
-/* stat cards (pass / fail / total) — stacked in the right rail */
-.stats { display: grid; grid-template-columns: 1fr; gap: 16px; }
-@media (max-width: 1180px) and (min-width: 621px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+/* stat cards (pass / fail / total) — a row across the centre column */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 620px) { .stats { grid-template-columns: 1fr; } }
 .stat-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
 .stat-ic { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex: none; }
 .stat-card.pass .stat-ic { background: var(--good-soft); color: var(--good-ink); }
