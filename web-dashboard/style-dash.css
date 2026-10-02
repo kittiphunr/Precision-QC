@@ -83,8 +83,6 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 
 /* ---------------------------------------------------------- app shell */
 .app { display: grid; grid-template-columns: 252px minmax(0, 1fr) 420px; gap: 16px; align-items: start; max-width: 1480px; margin: 0 auto; padding: 16px; }
-/* the upload card lives in the rail now — keep its two option panels stacked */
-.rail .options > [class*="pure-u"] { width: 100%; }
 .rail { display: grid; gap: 16px; position: sticky; top: 16px; align-self: start; min-width: 0; }
 /* two columns: rail drops full-width below the main content */
 @media (max-width: 1180px) {
