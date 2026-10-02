@@ -400,6 +400,11 @@ function renderSummary() {
   $("#n-pass").textContent = nPass;
   $("#n-fail").textContent = results.length - nPass;
   $("#n-total").textContent = t("sum.total", { n: results.length });
+  // optional top-of-page stat cards (editions that include them, e.g. Dashboard)
+  const setStat = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setStat("stat-pass", nPass);
+  setStat("stat-fail", results.length - nPass);
+  setStat("stat-total", results.length);
   $("#summary-body").innerHTML = results
     .map(({ id, report: r }) => `
       <tr data-target="r-${id}">
