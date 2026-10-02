@@ -1,0 +1,21 @@
+# Precision QC — Apache / LiteSpeed settings (ignored by other servers)
+DirectoryIndex index.html
+AddDefaultCharset utf-8
+
+# The engine's .py files are data the browser downloads for Pyodide —
+# never let the host run them as CGI scripts.
+Options -ExecCGI -Indexes
+<FilesMatch "\.py$">
+  SetHandler none
+  ForceType text/plain
+</FilesMatch>
+AddType application/json .json
+AddType image/webp .webp
+
+<IfModule mod_headers.c>
+  # always fetch the newest page and manifest; .py URLs carry ?v=<build>
+  <FilesMatch "\.(html|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  Header set X-Content-Type-Options "nosniff"
+</IfModule>

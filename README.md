@@ -22,6 +22,24 @@
    (หรือกด *Run workflow* ในแท็บ Actions)
 4. เปิด `https://<username>.github.io/<repo>/` → ลากภาพมาวาง หรือกดปุ่มภาพตัวอย่าง
 
+### 2) อัปโหลดขึ้นโฮสต์จริง (Shared hosting / Apache / Nginx)
+ไฟล์ที่พร้อมอัปโหลดอยู่ในโฟลเดอร์ **`deploy/`** แล้ว เว็บนี้เป็น static ทั้งหมด จึงไม่ต้องติดตั้ง Python หรือฐานข้อมูลบนเซิร์ฟเวอร์
+
+1. อัปโหลด**ไฟล์ทั้งหมดในโฟลเดอร์ `deploy/`** (ไม่ใช่ตัวโฟลเดอร์) ขึ้น `public_html/` หรือโฟลเดอร์ย่อย เช่น `public_html/qc/`
+   ด้วย FTP/SFTP (FileZilla) หรือ File Manager ของ cPanel/DirectAdmin
+2. ต้องมีไฟล์ซ่อน **`.htaccess`** ไปด้วย (ใน FileZilla เปิด *Server → Force showing hidden files*)
+   ไฟล์นี้กันไม่ให้เซิร์ฟเวอร์รันไฟล์ `.py` เป็นสคริปต์ และตั้งค่า cache ให้เห็นเวอร์ชันใหม่ทันที
+3. เปิด `https://<โดเมน>/` (หรือ `https://<โดเมน>/qc/`) ผ่าน **HTTPS** แล้วลองกดภาพตัวอย่าง
+
+เครื่องผู้ใช้ต้องต่ออินเทอร์เน็ตได้ เพราะหน้าเว็บโหลด Pyodide, Pure.css และฟอนต์จาก CDN
+ถ้าใช้ **Nginx** (ไม่อ่าน `.htaccess`) ให้ตั้ง `location ~ \.py$ { default_type text/plain; }` แทน
+
+**อัปเดตเวอร์ชัน:** หลังแก้โค้ดใน `web/` หรือ `precision_qc/` ให้สร้างโฟลเดอร์ใหม่ แล้วอัปโหลดทับทั้งหมด
+```bash
+python scripts/build_site.py --out deploy
+```
+CI จะแจ้งเตือนถ้าโฟลเดอร์ `deploy/` ไม่ตรงกับโค้ดล่าสุด
+
 ### ภาษา · Language · 语言
 - หน้าเว็บและรายงาน PDF รองรับ **ไทย · English · 中文** — สลับได้จากปุ่มมุมขวาบน ระบบจำภาษาที่เลือกไว้
 - ลิงก์ตรงเข้าภาษาที่ต้องการ: `?lang=th`, `?lang=en`, `?lang=zh`
@@ -116,7 +134,9 @@ precision_qc/        Python engine
   cli.py             คำสั่ง batch  (python -m precision_qc)
 web/                 หน้าเว็บ (HTML/CSS/JS) — โหลด Pyodide แล้วเรียก precision_qc.api
   i18n.js            ข้อความ 3 ภาษา (ไทย / English / 中文)
-scripts/build_site.py  ประกอบเว็บ + โค้ด Python ลง _site/ สำหรับ GitHub Pages
+scripts/build_site.py  ประกอบเว็บ + โค้ด Python ลง _site/ สำหรับ GitHub Pages (หรือ deploy/)
+deploy/              ไฟล์พร้อมอัปโหลดขึ้นโฮสต์จริง (สร้างจาก build_site.py — อย่าแก้ไฟล์ในนี้ตรง ๆ)
+hosting/.htaccess    ค่าเซิร์ฟเวอร์ Apache ที่ build ใส่ลงใน deploy/
 samples/             ภาพตัวอย่าง
 inputs/              วางภาพที่นี่เพื่อให้ QC Batch workflow ตรวจ
 tests/               pytest
