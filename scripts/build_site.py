@@ -39,7 +39,8 @@ IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
 EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
                   "web-tw": ("tw.css", "i18n.js", "app.js"),
-                  "web-lab": ("style-lab.css", "i18n.js", "app.js")}
+                  "web-lab": ("style-lab.css", "i18n.js", "app.js"),
+                  "web-dashboard": ("style-dash.css", "i18n.js", "app.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
 # pinned so the built output is identical locally and in CI (the drift check in
@@ -163,6 +164,7 @@ def build(out: Path, lock_domains=None) -> Path:
     _assemble("web", out / "pure", build_id, samples, lock_domains)         # Pure.css edition
     _assemble("web-tw", out / "tailwind", build_id, samples, lock_domains)  # Tailwind edition
     _assemble("web-lab", out / "lab", build_id, samples, lock_domains)      # Lab edition (+ webcam)
+    _assemble("web-dashboard", out / "dashboard", build_id, samples, lock_domains)  # Dashboard (+ webcam)
     _landing(out)  # a chooser at the root so / is not a 404 when all are uploaded
     return out
 
