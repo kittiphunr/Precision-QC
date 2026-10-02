@@ -175,9 +175,9 @@ web-tw/              หน้าเว็บ (เวอร์ชัน Tailwind
   tailwind.config.js ตั้งค่าธีม/สีของ Tailwind
 web-lab/             หน้าเว็บ (เวอร์ชัน Lab) — ออกแบบสำหรับห้องแล็บ + ถ่ายภาพจากกล้อง
   style-lab.css      สไตล์โทนคลินิก (teal/slate) คอนทราสต์สูง ปุ่มใหญ่
-web-dashboard/       หน้าเว็บ (เวอร์ชัน Dashboard) — ใช้ Tailwind CSS เป็นแกนหลัก เลย์เอาต์เมนูซ้าย โทนม่วง + กล้อง
-  src.css            ต้นทาง Tailwind (คอมไพล์เป็น tw-dash.css ตอน build) — ฟอร์ม/ปุ่มเขียนด้วย @apply
-  tailwind.config.js ตั้งค่าธีม/สีของ Tailwind
+web-dashboard/       หน้าเว็บ (เวอร์ชัน Dashboard) — ใช้ Tailwind CSS มาตรฐานล้วน (สี slate/indigo/emerald/rose)
+  src.css            ต้นทาง Tailwind (คอมไพล์เป็น tw-dash.css ตอน build) — ทุกส่วนเขียนด้วย @apply utility มาตรฐาน
+  tailwind.config.js ตั้งค่า dark mode ให้ตามปุ่มสลับธีม/ระบบ (ไม่มีสี/ค่า custom)
 scripts/build_site.py  ประกอบเว็บทั้งสองเวอร์ชัน + โค้ด Python ลง _site/ (หรือ deploy/)
 deploy/              ไฟล์พร้อมอัปโหลดขึ้นโฮสต์จริง (สร้างจาก build_site.py — อย่าแก้ไฟล์ในนี้ตรง ๆ)
 hosting/.htaccess    ค่าเซิร์ฟเวอร์ Apache ที่ build ใส่ลงใน deploy/
