@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" />
-  <link rel="stylesheet" href="style-dash.css?v=a6300427e665" />
+  <link rel="stylesheet" href="style-dash.css?v=0279bacd5665" />
   <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 </head>
 <body>
@@ -100,6 +100,26 @@
           </span>
         </section>
 
+        <section class="stats" aria-label="Summary">
+          <div class="stat-card pass">
+            <span class="stat-ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <div><div class="stat-num" id="stat-pass">0</div><div class="stat-lbl" data-i18n="sum.pass">ผ่าน</div></div>
+          </div>
+          <div class="stat-card fail">
+            <span class="stat-ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </span>
+            <div><div class="stat-num" id="stat-fail">0</div><div class="stat-lbl" data-i18n="sum.fail">ไม่ผ่าน</div></div>
+          </div>
+          <div class="stat-card total">
+            <span class="stat-ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </span>
+            <div><div class="stat-num" id="stat-total">0</div><div class="stat-lbl" data-i18n="stat.total">ทั้งหมด</div></div>
+          </div>
+        </section>
         <section class="panel block" aria-labelledby="steps-title">
           <h2 id="steps-title" class="section-title" data-i18n="steps.title">ขั้นตอนการใช้งาน</h2>
           <ol class="pure-g gutter steps">
@@ -109,6 +129,35 @@
           </ol>
         </section>
 
+        <section id="summary" class="panel block" aria-labelledby="summary-title" hidden>
+          <div class="summary-head">
+            <div>
+              <h2 id="summary-title" class="section-title" data-i18n="summary.title">สรุปผลการตรวจ</h2>
+              <div class="tally">
+                <span class="tally-item pass"><span aria-hidden="true">✓</span><b id="n-pass">0</b> <span data-i18n="sum.pass">ผ่าน</span></span>
+                <span class="tally-item fail"><span aria-hidden="true">✕</span><b id="n-fail">0</b> <span data-i18n="sum.fail">ไม่ผ่าน</span></span>
+                <span class="muted" id="n-total"></span>
+              </div>
+            </div>
+            <div class="actions">
+              <button id="dl-pdf-all" class="pure-button pure-button-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span data-i18n="btn.pdfAll">รายงาน PDF ทั้งหมด</span>
+              </button>
+              <button id="dl-csv" class="pure-button" data-i18n="btn.csv">ตาราง CSV</button>
+              <button id="clear" class="pure-button" data-i18n="btn.clear">ล้างผล</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="pure-table pure-table-horizontal">
+              <thead><tr>
+                <th data-i18n="th.image">ภาพ</th><th data-i18n="th.result">ผล</th><th class="num" data-i18n="th.score">คะแนน</th>
+                <th data-i18n="th.grade">เกรด</th><th data-i18n="th.note">หมายเหตุ</th>
+              </tr></thead>
+              <tbody id="summary-body"></tbody>
+            </table>
+          </div>
+        </section>
         <section id="results"></section>
       </div>
     </main>
@@ -206,55 +255,6 @@
               </form>
             </details>
           </div>
-        </div>
-      </section>
-      <section class="stats" aria-label="Summary">
-        <div class="stat-card pass">
-          <span class="stat-ic" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <div><div class="stat-num" id="stat-pass">0</div><div class="stat-lbl" data-i18n="sum.pass">ผ่าน</div></div>
-        </div>
-        <div class="stat-card fail">
-          <span class="stat-ic" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-          </span>
-          <div><div class="stat-num" id="stat-fail">0</div><div class="stat-lbl" data-i18n="sum.fail">ไม่ผ่าน</div></div>
-        </div>
-        <div class="stat-card total">
-          <span class="stat-ic" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-          </span>
-          <div><div class="stat-num" id="stat-total">0</div><div class="stat-lbl" data-i18n="stat.total">ทั้งหมด</div></div>
-        </div>
-      </section>
-      <section id="summary" class="panel block" aria-labelledby="summary-title" hidden>
-        <div class="summary-head">
-          <div>
-            <h2 id="summary-title" class="section-title" data-i18n="summary.title">สรุปผลการตรวจ</h2>
-            <div class="tally">
-              <span class="tally-item pass"><span aria-hidden="true">✓</span><b id="n-pass">0</b> <span data-i18n="sum.pass">ผ่าน</span></span>
-              <span class="tally-item fail"><span aria-hidden="true">✕</span><b id="n-fail">0</b> <span data-i18n="sum.fail">ไม่ผ่าน</span></span>
-              <span class="muted" id="n-total"></span>
-            </div>
-          </div>
-          <div class="actions">
-            <button id="dl-pdf-all" class="pure-button pure-button-primary">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span data-i18n="btn.pdfAll">รายงาน PDF ทั้งหมด</span>
-            </button>
-            <button id="dl-csv" class="pure-button" data-i18n="btn.csv">ตาราง CSV</button>
-            <button id="clear" class="pure-button" data-i18n="btn.clear">ล้างผล</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="pure-table pure-table-horizontal">
-            <thead><tr>
-              <th data-i18n="th.image">ภาพ</th><th data-i18n="th.result">ผล</th><th class="num" data-i18n="th.score">คะแนน</th>
-              <th data-i18n="th.grade">เกรด</th><th data-i18n="th.note">หมายเหตุ</th>
-            </tr></thead>
-            <tbody id="summary-body"></tbody>
-          </table>
         </div>
       </section>
     </aside>
