@@ -18,8 +18,9 @@ jobs:
         run: pytest -q
       - name: deploy/ matches the source
         run: |
-          python scripts/build_site.py --out "$RUNNER_TEMP/site"
-          diff -r "$RUNNER_TEMP/site" deploy || { echo "::error::deploy/ is out of date — run: python scripts/build_site.py --out deploy"; exit 1; }
+          args=""; while read -r d; do [ -n "$d" ] && args="$args --lock-domain $d"; done < hosting/deploy-domains.txt
+          python scripts/build_site.py --out "$RUNNER_TEMP/site" $args
+          diff -r "$RUNNER_TEMP/site" deploy || { echo "::error::deploy/ is out of date — run: python scripts/build_site.py --out deploy $args"; exit 1; }
       - name: Analyse sample images
         run: python -m precision_qc samples -o reports
       - uses: actions/upload-artifact@v4
