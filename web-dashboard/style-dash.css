@@ -279,6 +279,20 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
   .score .hero { font-size: 36px; }
 }
 
+/* -------------------------------------------------------- result modal */
+/* results are shown full-screen in the modal, so hide the inline cards */
+.results-modal #results { display: none; }
+body.modal-open { overflow: hidden; }
+.result-modal { position: fixed; inset: 0; z-index: 80; background: rgba(12, 10, 26, .6); backdrop-filter: blur(2px); display: grid; place-items: start center; padding: clamp(12px, 3vw, 40px); overflow: auto; }
+.rm-dialog { position: relative; width: min(1040px, 100%); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 30px 80px -24px rgba(2, 6, 23, .6); overflow: hidden; }
+.rm-topbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; background: var(--card); border-bottom: 1px solid var(--line); }
+.rm-topbar h2 { margin: 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-ink); }
+.rm-close { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--soft); color: var(--ink); cursor: pointer; display: grid; place-items: center; flex: none; transition: background .12s, color .12s, border-color .12s; }
+.rm-close:hover { background: var(--critical-soft); color: var(--critical-ink); border-color: transparent; }
+/* the result card sits flush inside the dialog (it has its own internal padding) */
+.rm-body > .card { border: 0; border-radius: 0; box-shadow: none; }
+.view-btn { padding: .3em 1em; font-size: 13px; min-height: 0; }
+
 /* =================================================================
    A4 report pages — identical to the other editions (formal document).
    ================================================================= */
