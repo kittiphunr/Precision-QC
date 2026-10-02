@@ -1,0 +1,73 @@
+"""Assemble the static web app into _site/ (what GitHub Pages serves).
+
+    python scripts/build_site.py               # build into _site/
+    python scripts/build_site.py --serve       # build and open http://localhost:8000
+    python scripts/build_site.py --out deploy  # refresh deploy/, the folder to upload to a web host
+"""
+
+import argparse
+import functools
+import hashlib
+import http.server
+import json
+import shutil
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+WEB_ASSETS = ("style.css", "i18n.js", "app.js")
+
+
+def build(out: Path) -> Path:
+    if out.exists():
+        shutil.rmtree(out)
+    shutil.copytree(ROOT / "web", out)
+    pkg = out / "py" / "precision_qc"
+    pkg.mkdir(parents=True)
+    py_files = sorted(p.name for p in (ROOT / "precision_qc").glob("*.py"))
+    for name in py_files:
+        shutil.copy2(ROOT / "precision_qc" / name, pkg / name)
+    samples = sorted(p.name for p in (ROOT / "samples").glob("*") if p.suffix.lower() in IMAGE_EXT)
+    (out / "samples").mkdir()
+    for name in samples:
+        shutil.copy2(ROOT / "samples" / name, out / "samples" / name)
+    # content hash of the engine: the web app appends it to every .py URL so a
+    # new deploy is never served from a stale browser / CDN cache
+    digest = hashlib.sha256()
+    for name in py_files:
+        digest.update((ROOT / "precision_qc" / name).read_bytes())
+    build = digest.hexdigest()[:12]
+    # same for the page's own CSS / JS: index.html links them as file?v=<hash>
+    index = out / "index.html"
+    html = index.read_text(encoding="utf-8")
+    for name in WEB_ASSETS:
+        tag = hashlib.sha256((ROOT / "web" / name).read_bytes()).hexdigest()[:12]
+        ref = f'"{name}"'
+        if ref not in html:
+            raise SystemExit(f"index.html no longer references {name}")
+        html = html.replace(ref, f'"{name}?v={tag}"')
+    index.write_text(html, encoding="utf-8")
+    manifest = {"build": build, "py_files": py_files, "samples": samples}
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    (out / ".nojekyll").write_text("")
+    # server settings for Apache / LiteSpeed hosts (GitHub Pages ignores them)
+    shutil.copy2(ROOT / "hosting" / ".htaccess", out / ".htaccess")
+    print(f"Built {out} (build {build}, {len(py_files)} python files, {len(samples)} samples)")
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default=str(ROOT / "_site"))
+    ap.add_argument("--serve", action="store_true")
+    ap.add_argument("--port", type=int, default=8000)
+    args = ap.parse_args()
+    out = build(Path(args.out))
+    if args.serve:
+        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(out))
+        print(f"Serving on http://localhost:{args.port}  (Ctrl+C to stop)")
+        http.server.ThreadingHTTPServer(("", args.port), handler).serve_forever()
+
+
+if __name__ == "__main__":
+    main()
