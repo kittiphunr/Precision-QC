@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" />
-  <link rel="stylesheet" href="style-lab.css?v=4c2beb4b4477" />
+  <link rel="stylesheet" href="style-lab.css?v=f48a667e9785" />
   <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 </head>
 <body>
@@ -70,6 +70,27 @@
   </header>
 
   <main id="main" class="wrap">
+    <section class="stats block" aria-label="Summary">
+      <div class="stat-card pass">
+        <span class="stat-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div><div class="stat-num" id="stat-pass">0</div><div class="stat-lbl" data-i18n="sum.pass">ผ่าน</div></div>
+      </div>
+      <div class="stat-card fail">
+        <span class="stat-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </span>
+        <div><div class="stat-num" id="stat-fail">0</div><div class="stat-lbl" data-i18n="sum.fail">ไม่ผ่าน</div></div>
+      </div>
+      <div class="stat-card total">
+        <span class="stat-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </span>
+        <div><div class="stat-num" id="stat-total">0</div><div class="stat-lbl" data-i18n="stat.total">ทั้งหมด</div></div>
+      </div>
+    </section>
+
     <section class="block" aria-labelledby="steps-title">
       <h2 id="steps-title" class="section-title" data-i18n="steps.title">ขั้นตอนการใช้งาน</h2>
       <ol class="pure-g gutter steps">
