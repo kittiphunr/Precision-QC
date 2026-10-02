@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+WEB_ASSETS = ("style.css", "i18n.js", "app.js")
 
 
 def build(out: Path) -> Path:
@@ -36,6 +37,16 @@ def build(out: Path) -> Path:
     for name in py_files:
         digest.update((ROOT / "precision_qc" / name).read_bytes())
     build = digest.hexdigest()[:12]
+    # same for the page's own CSS / JS: index.html links them as file?v=<hash>
+    index = out / "index.html"
+    html = index.read_text(encoding="utf-8")
+    for name in WEB_ASSETS:
+        tag = hashlib.sha256((ROOT / "web" / name).read_bytes()).hexdigest()[:12]
+        ref = f'"{name}"'
+        if ref not in html:
+            raise SystemExit(f"index.html no longer references {name}")
+        html = html.replace(ref, f'"{name}?v={tag}"')
+    index.write_text(html, encoding="utf-8")
     manifest = {"build": build, "py_files": py_files, "samples": samples}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     (out / ".nojekyll").write_text("")
