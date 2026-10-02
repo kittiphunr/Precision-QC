@@ -322,7 +322,7 @@ main > *, #results > * { min-width: 0; }
 .report-host { position: fixed; left: 0; top: 0; z-index: -10; pointer-events: none; }
 .rpage {
   width: 794px; height: 1123px; background: #fff; color: #1a1f26;
-  font-family: "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "Sarabun", "TH Sarabun New", "TH SarabunPSK", "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: 11px; line-height: 1.5;
   padding: 38px 48px 0; position: relative; overflow: hidden;
 }
