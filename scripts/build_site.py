@@ -1,7 +1,8 @@
 """Assemble the static web app into _site/ (what GitHub Pages serves).
 
-    python scripts/build_site.py            # build into _site/
-    python scripts/build_site.py --serve    # build and open http://localhost:8000
+    python scripts/build_site.py               # build into _site/
+    python scripts/build_site.py --serve       # build and open http://localhost:8000
+    python scripts/build_site.py --out deploy  # refresh deploy/, the folder to upload to a web host
 """
 
 import argparse
@@ -38,6 +39,8 @@ def build(out: Path) -> Path:
     manifest = {"build": build, "py_files": py_files, "samples": samples}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     (out / ".nojekyll").write_text("")
+    # server settings for Apache / LiteSpeed hosts (GitHub Pages ignores them)
+    shutil.copy2(ROOT / "hosting" / ".htaccess", out / ".htaccess")
     print(f"Built {out} (build {build}, {len(py_files)} python files, {len(samples)} samples)")
     return out
 
