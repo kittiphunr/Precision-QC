@@ -4,11 +4,11 @@
     python scripts/build_site.py --serve       # build and open http://localhost:8000
     python scripts/build_site.py --out deploy  # refresh deploy/, the folder to upload to a web host
 
-Two editions are built from one command:
-  <out>/        the Pure.css edition         (source: web/)
-  <out>/tw/     the Tailwind CSS edition      (source: web-tw/, tw.css compiled here)
+Two editions are built from one command, each in its own self-contained folder:
+  <out>/pure/       the Pure.css edition      (source: web/)
+  <out>/tailwind/   the Tailwind CSS edition  (source: web-tw/, tw.css compiled here)
 Both share the same Python engine, samples and behaviour — only the styling
-differs — so you can upload whichever you prefer (or both).
+differs — so you upload whichever folder you prefer (or both).
 
 Protecting the hosted copy
 --------------------------
@@ -158,9 +158,49 @@ def build(out: Path, lock_domains=None) -> Path:
     samples = sorted(p.name for p in (ROOT / "samples").glob("*") if p.suffix.lower() in IMAGE_EXT)
 
     print(f"Built (engine {build_id}, {len(py_files)} python files, {len(samples)} samples):")
-    _assemble("web", out, build_id, samples, lock_domains)          # Pure.css at the root
-    _assemble("web-tw", out / "tw", build_id, samples, lock_domains)  # Tailwind at /tw
+    # each edition goes in its own self-contained folder — upload either one whole
+    _assemble("web", out / "pure", build_id, samples, lock_domains)        # Pure.css edition
+    _assemble("web-tw", out / "tailwind", build_id, samples, lock_domains)  # Tailwind edition
+    _landing(out)  # a chooser at the root so / is not a 404 when both are uploaded
     return out
+
+
+def _landing(out: Path) -> None:
+    """Write a tiny chooser page at the output root linking to both editions."""
+    (out / "index.html").write_text("""<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Precision QC</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f2f4f7; color: #16202b; }
+  @media (prefers-color-scheme: dark) { body { background: #0f1419; color: #e6eaef; } .card { background: #182028 !important; border-color: #2a343f !important; } a.ed { background: #111820 !important; border-color: #2a343f !important; color: inherit; } }
+  .card { background: #fff; border: 1px solid #dde2e8; border-radius: 14px; padding: 28px; max-width: 460px; width: 100%; box-shadow: 0 1px 6px rgba(16,24,40,.06); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  p { margin: 0 0 18px; color: #697586; font-size: 14px; }
+  a.ed { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    text-decoration: none; color: inherit; border: 1px solid #dde2e8; border-radius: 10px;
+    padding: 14px 16px; margin-top: 10px; background: #f6f8fa; font-weight: 600; }
+  a.ed small { display: block; font-weight: 400; color: #697586; font-size: 12.5px; margin-top: 2px; }
+  a.ed:hover { border-color: #2563c9; }
+  .arrow { color: #2563c9; font-size: 20px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Precision QC</h1>
+    <p>เลือกเวอร์ชันหน้าตาที่ต้องการใช้งาน · Choose an edition</p>
+    <a class="ed" href="pure/"><span>Pure.css<small>เวอร์ชันดั้งเดิม · original edition</small></span><span class="arrow">→</span></a>
+    <a class="ed" href="tailwind/"><span>Tailwind CSS<small>เวอร์ชันใหม่ · new edition</small></span><span class="arrow">→</span></a>
+  </div>
+</body>
+</html>
+""", encoding="utf-8")
+    (out / ".nojekyll").write_text("")
 
 
 def main() -> None:
@@ -175,7 +215,7 @@ def main() -> None:
     out = build(Path(args.out), lock_domains=args.lock_domain)
     if args.serve:
         handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(out))
-        print(f"Serving on http://localhost:{args.port}  (Tailwind edition at /tw/ · Ctrl+C to stop)")
+        print(f"Serving on http://localhost:{args.port}  (chooser at / · editions at /pure/ and /tailwind/ · Ctrl+C to stop)")
         http.server.ThreadingHTTPServer(("", args.port), handler).serve_forever()
 
 
