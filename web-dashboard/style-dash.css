@@ -158,8 +158,12 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .hero-mark { flex: none; width: 60px; height: 60px; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .3); border-radius: 18px; }
 @media (max-width: 560px) { .hero { padding: 22px; } .hero-mark { display: none; } }
 
-.steps { list-style: none; padding: 0; margin: 0; }
-.step { display: flex; gap: 13px; align-items: flex-start; height: 100%; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 15px 16px; }
+/* auto-fit the step cards so they never get squeezed in the centre column:
+   3 across when there's room, dropping to 2 / 1 as it narrows (overrides the
+   Pure flex grid so cards keep a comfortable minimum width) */
+.steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.steps > li { width: 100%; padding: 0; }
+.step { display: flex; gap: 13px; align-items: flex-start; height: 100%; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
 .step .num { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; font-size: 15px; }
 .step b { display: block; font-size: 15px; }
 .step p { margin: 3px 0 0; font-size: 13.5px; color: var(--muted); }
