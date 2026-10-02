@@ -40,7 +40,7 @@ IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
                   "web-tw": ("tw.css", "i18n.js", "app.js"),
                   "web-lab": ("style-lab.css", "i18n.js", "app.js"),
-                  "web-dashboard": ("style-dash.css", "i18n.js", "app.js")}
+                  "web-dashboard": ("tw-dash.css", "i18n.js", "app.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
 # pinned so the built output is identical locally and in CI (the drift check in
@@ -86,9 +86,9 @@ def _assemble(src: str, out: Path, build_id: str, samples, lock_domains) -> None
     src_dir = ROOT / src
     shutil.copytree(src_dir, out, dirs_exist_ok=True)
 
-    # Tailwind edition: compile tw.css here, drop the build-only sources
-    if src == "web-tw":
-        _build_tailwind(src_dir, out / "tw.css")
+    # Tailwind-compiled editions: compile the stylesheet here, drop the sources
+    if (src_dir / "tailwind.config.js").exists():
+        _build_tailwind(src_dir, out / EDITION_ASSETS[src][0])
         for junk in ("src.css", "tailwind.config.js"):
             (out / junk).unlink(missing_ok=True)
 

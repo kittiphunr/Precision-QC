@@ -1,9 +1,11 @@
-/* Precision QC — "Dashboard" edition.
- * A modern SaaS-dashboard look (inspired by a bento-card reference): light grey
- * canvas, white rounded cards, soft shadows, a left sidebar with nav, and a
- * lavender/purple accent. Self-contained (no Pure.css). Keeps every DOM hook
- * app.js needs (incl. the optional webcam) and the A4 PDF report is unchanged.
+/* Precision QC — "Dashboard" edition — built with Tailwind CSS as its core.
+ * Tailwind provides the reset (preflight) and utilities; the form controls,
+ * buttons and the page components are authored with @apply + Tailwind
+ * utilities below. Compiled to tw-dash.css at build time (see build_site.py).
  */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ---------------------------------------------------------- theme tokens */
 :root {
@@ -58,35 +60,33 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 @media (min-width: 80em) { .pure-u-xl-1-3 { width: 33.3333%; } }
 
 /* ---------------------------------------------------------- buttons */
-.pure-button {
-  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--card);
-  border: 1px solid var(--line); border-radius: 999px; padding: .55em 1.2em; line-height: 1.35; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  transition: border-color .12s, color .12s, background .12s, box-shadow .12s;
+@layer components {
+  .pure-button {
+    @apply inline-flex items-center justify-center gap-[7px] cursor-pointer font-semibold rounded-full border transition;
+    @apply border-[var(--line)] bg-[var(--card)] text-[var(--ink)] text-[14px] px-[1.2em] py-[0.55em];
+    line-height: 1.35;
+  }
+  .pure-button:hover { @apply bg-[var(--soft)] text-[var(--accent-ink)] border-[var(--accent)]; }
+  .pure-button-primary { @apply border-0 text-white; background: var(--accent); box-shadow: 0 10px 20px -12px var(--accent); }
+  .pure-button-primary:hover { @apply text-white; background: var(--accent-ink); }
+  .pure-button[disabled] { @apply opacity-50 cursor-default; box-shadow: none; }
 }
-.pure-button:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--soft); }
-.pure-button-primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 10px 20px -12px var(--accent); }
-.pure-button-primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff; }
-.pure-button[disabled] { opacity: .5; cursor: default; box-shadow: none; }
 
 /* ---------------------------------------------------------- forms + tables */
-.pure-form input[type] {
-  background: var(--soft); color: var(--ink);
-  border: 1.5px solid var(--line); border-radius: 12px;
-  font-family: inherit; font-size: 15px; line-height: 1.4;
-  padding: .72em .9em; width: 100%; box-sizing: border-box;
-  transition: border-color .14s, background .14s, box-shadow .14s;
+@layer components {
+  /* text inputs / date / number — styled with Tailwind utilities */
+  .pure-form input {
+    @apply w-full rounded-xl border-[1.5px] border-[var(--line)] bg-[var(--soft)] text-[var(--ink)] text-[15px] transition;
+    padding: .72em .9em; line-height: 1.4;
+  }
+  .pure-form input::placeholder { @apply text-[var(--muted)] opacity-100; }
+  .pure-form input:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .pure-form input:focus { @apply border-[var(--accent)] bg-[var(--card)] outline-none; box-shadow: 0 0 0 4px var(--accent-soft); }
+  .pure-form input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  .pure-input-1 { @apply w-full; }
+  .pure-form-stacked label { @apply flex flex-col gap-[7px] m-0 text-[13px] font-semibold text-[var(--ink-2)]; letter-spacing: .1px; }
+  .pure-form-stacked input { @apply m-0; }
 }
-.pure-form input[type]::placeholder { color: var(--muted); opacity: 1; }
-.pure-form input[type]:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
-.pure-form input[type]:focus {
-  border-color: var(--accent); background: var(--card); outline: none;
-  box-shadow: 0 0 0 4px var(--accent-soft);
-}
-.pure-form input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
-.pure-input-1 { width: 100%; }
-.pure-form-stacked label { display: flex; flex-direction: column; gap: 7px; margin: 0; font-size: 13px; color: var(--ink-2); font-weight: 600; letter-spacing: .1px; }
-.pure-form-stacked input[type] { margin: 0; }
 .pure-table { border: 1px solid var(--line); border-collapse: separate; border-spacing: 0; border-radius: 14px; overflow: hidden; color: var(--ink); width: 100%; font-size: 14px; }
 .pure-table thead { background: var(--soft); color: var(--muted); }
 .pure-table th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; text-align: left; }
@@ -196,8 +196,10 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .cam-video { width: 100%; max-height: 440px; background: #000; border-radius: 12px; display: block; object-fit: contain; }
 .cam-hint { color: var(--muted); font-size: 14px; margin: 12px 0; }
 .cam-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.cam-select { background: var(--soft); color: var(--ink); border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; font-size: 14px; padding: .6em .8em; transition: border-color .14s, box-shadow .14s; }
-.cam-select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
+@layer components {
+  .cam-select { @apply rounded-xl border-[1.5px] border-[var(--line)] bg-[var(--soft)] text-[var(--ink)] text-[14px] transition; padding: .6em .8em; }
+  .cam-select:focus { @apply border-[var(--accent)] outline-none; box-shadow: 0 0 0 4px var(--accent-soft); }
+}
 .samples { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; color: var(--muted); font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip.pure-button { padding: .32em 1.05em; font-size: 13px; background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
