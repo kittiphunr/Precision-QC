@@ -119,6 +119,69 @@
           </ol>
         </section>
 
+        <section class="panel block" aria-labelledby="opts-title">
+          <h2 id="opts-title" class="section-title" data-i18n="opts.title">ตั้งค่าก่อนตรวจ</h2>
+        <div class="pure-g gutter options">
+          <div class="pure-u-1 pure-u-lg-1-2">
+            <details class="opt">
+              <summary>
+                <span class="opt-title" data-i18n="info.title">ข้อมูลสำหรับรายงาน PDF</span>
+                <span class="opt-hint" data-i18n="info.hint">ชื่อหน่วยงาน ผู้วิเคราะห์ รายละเอียดตัวอย่าง</span>
+              </summary>
+              <form id="info" class="pure-form pure-form-stacked" onsubmit="return false">
+                <div class="pure-g gutter">
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.labName"></span><input name="labName" class="pure-input-1" data-i18n-ph="ph.labName" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.labAddress"></span><input name="labAddress" class="pure-input-1" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.customer"></span><input name="customer" class="pure-input-1" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.species"></span><input name="species" class="pure-input-1" data-i18n-ph="ph.species" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.batch"></span><input name="batch" class="pure-input-1" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.medium"></span><input name="medium" class="pure-input-1" data-i18n-ph="ph.medium" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.incubation"></span><input name="incubation" class="pure-input-1" data-i18n-ph="ph.incubation" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.inoculationDate"></span><input name="inoculationDate" type="date" class="pure-input-1" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.analyst"></span><input name="analyst" class="pure-input-1" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.approver"></span><input name="approver" class="pure-input-1" /></label>
+                  <label class="pure-u-1"><span data-i18n="f.remarks"></span><input name="remarks" class="pure-input-1" /></label>
+                </div>
+              </form>
+            </details>
+          </div>
+
+          <div class="pure-u-1 pure-u-lg-1-2">
+            <details class="opt">
+              <summary>
+                <span class="opt-title" id="cfg-title" data-i18n="cfg.title">เกณฑ์การตัดสิน</span>
+                <span class="opt-hint" data-i18n="cfg.hint">ปรับค่าผ่าน / ไม่ผ่านให้เหมาะกับสายพันธุ์</span>
+              </summary>
+              <form id="cfg" class="pure-form pure-form-stacked" onsubmit="return false">
+                <div class="pure-g gutter">
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.min_score"></span><input name="min_score" class="pure-input-1" type="number" step="1" min="0" max="100" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.min_growth"></span><input name="min_growth" class="pure-input-1" type="number" step="1" min="0" max="100" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.max_contamination"></span><input name="max_contamination" class="pure-input-1" type="number" step="0.5" min="0" max="100" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.max_agar"></span><input name="max_agar" class="pure-input-1" type="number" step="1" min="0" max="100" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.min_iou"></span><input name="min_iou" class="pure-input-1" type="number" step="0.05" min="0" max="1" /></label>
+                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.plate_cm"></span><input name="plate_cm" class="pure-input-1" type="number" step="0.1" min="1" /></label>
+                </div>
+                <details class="advanced">
+                  <summary data-i18n="cfg.advanced">ตั้งค่าขั้นสูง</summary>
+                  <div class="pure-g gutter">
+                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_growth"></span><input name="weight_growth" class="pure-input-1" type="number" step="0.05" min="0" /></label>
+                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_whiteness"></span><input name="weight_whiteness" class="pure-input-1" type="number" step="0.05" min="0" /></label>
+                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_fluffiness"></span><input name="weight_fluffiness" class="pure-input-1" type="number" step="0.05" min="0" /></label>
+                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_shape"></span><input name="weight_shape" class="pure-input-1" type="number" step="0.05" min="0" /></label>
+                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.dark_threshold"></span><input name="dark_threshold" class="pure-input-1" type="number" step="1" min="0" max="255" /></label>
+                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.white_max_chroma"></span><input name="white_max_chroma" class="pure-input-1" type="number" step="0.5" min="1" /></label>
+                  </div>
+                </details>
+                <div class="form-actions">
+                  <button type="button" id="cfg-reset" class="pure-button" data-i18n="btn.reset">คืนค่าเริ่มต้น</button>
+                  <button type="button" id="rerun" class="pure-button pure-button-primary" disabled data-i18n="btn.rerun">ตรวจใหม่ด้วยเกณฑ์นี้</button>
+                </div>
+              </form>
+            </details>
+          </div>
+        </div>
+        </section>
+
         <section id="summary" class="panel block" aria-labelledby="summary-title" hidden>
           <div class="summary-head">
             <div>
@@ -197,65 +260,6 @@
           <div id="sample-list" class="chips"></div>
         </div>
 
-        <div class="pure-g gutter options">
-          <div class="pure-u-1 pure-u-lg-1-2">
-            <details class="opt">
-              <summary>
-                <span class="opt-title" data-i18n="info.title">ข้อมูลสำหรับรายงาน PDF</span>
-                <span class="opt-hint" data-i18n="info.hint">ชื่อหน่วยงาน ผู้วิเคราะห์ รายละเอียดตัวอย่าง</span>
-              </summary>
-              <form id="info" class="pure-form pure-form-stacked" onsubmit="return false">
-                <div class="pure-g gutter">
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.labName"></span><input name="labName" class="pure-input-1" data-i18n-ph="ph.labName" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.labAddress"></span><input name="labAddress" class="pure-input-1" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.customer"></span><input name="customer" class="pure-input-1" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.species"></span><input name="species" class="pure-input-1" data-i18n-ph="ph.species" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.batch"></span><input name="batch" class="pure-input-1" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.medium"></span><input name="medium" class="pure-input-1" data-i18n-ph="ph.medium" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.incubation"></span><input name="incubation" class="pure-input-1" data-i18n-ph="ph.incubation" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.inoculationDate"></span><input name="inoculationDate" type="date" class="pure-input-1" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.analyst"></span><input name="analyst" class="pure-input-1" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.approver"></span><input name="approver" class="pure-input-1" /></label>
-                  <label class="pure-u-1"><span data-i18n="f.remarks"></span><input name="remarks" class="pure-input-1" /></label>
-                </div>
-              </form>
-            </details>
-          </div>
-
-          <div class="pure-u-1 pure-u-lg-1-2">
-            <details class="opt">
-              <summary>
-                <span class="opt-title" id="cfg-title" data-i18n="cfg.title">เกณฑ์การตัดสิน</span>
-                <span class="opt-hint" data-i18n="cfg.hint">ปรับค่าผ่าน / ไม่ผ่านให้เหมาะกับสายพันธุ์</span>
-              </summary>
-              <form id="cfg" class="pure-form pure-form-stacked" onsubmit="return false">
-                <div class="pure-g gutter">
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.min_score"></span><input name="min_score" class="pure-input-1" type="number" step="1" min="0" max="100" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.min_growth"></span><input name="min_growth" class="pure-input-1" type="number" step="1" min="0" max="100" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.max_contamination"></span><input name="max_contamination" class="pure-input-1" type="number" step="0.5" min="0" max="100" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.max_agar"></span><input name="max_agar" class="pure-input-1" type="number" step="1" min="0" max="100" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.min_iou"></span><input name="min_iou" class="pure-input-1" type="number" step="0.05" min="0" max="1" /></label>
-                  <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.plate_cm"></span><input name="plate_cm" class="pure-input-1" type="number" step="0.1" min="1" /></label>
-                </div>
-                <details class="advanced">
-                  <summary data-i18n="cfg.advanced">ตั้งค่าขั้นสูง</summary>
-                  <div class="pure-g gutter">
-                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_growth"></span><input name="weight_growth" class="pure-input-1" type="number" step="0.05" min="0" /></label>
-                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_whiteness"></span><input name="weight_whiteness" class="pure-input-1" type="number" step="0.05" min="0" /></label>
-                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_fluffiness"></span><input name="weight_fluffiness" class="pure-input-1" type="number" step="0.05" min="0" /></label>
-                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.weight_shape"></span><input name="weight_shape" class="pure-input-1" type="number" step="0.05" min="0" /></label>
-                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.dark_threshold"></span><input name="dark_threshold" class="pure-input-1" type="number" step="1" min="0" max="255" /></label>
-                    <label class="pure-u-1 pure-u-sm-1-2"><span data-i18n="f.white_max_chroma"></span><input name="white_max_chroma" class="pure-input-1" type="number" step="0.5" min="1" /></label>
-                  </div>
-                </details>
-                <div class="form-actions">
-                  <button type="button" id="cfg-reset" class="pure-button" data-i18n="btn.reset">คืนค่าเริ่มต้น</button>
-                  <button type="button" id="rerun" class="pure-button pure-button-primary" disabled data-i18n="btn.rerun">ตรวจใหม่ด้วยเกณฑ์นี้</button>
-                </div>
-              </form>
-            </details>
-          </div>
-        </div>
       </section>
     </aside>
   </div>
