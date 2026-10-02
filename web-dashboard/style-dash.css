@@ -120,6 +120,17 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .bento { display: grid; gap: 16px; min-width: 0; }
 .bento > * , #results > * { min-width: 0; }
 
+/* top stat cards (pass / fail / total) */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 620px) { .stats { grid-template-columns: 1fr; } }
+.stat-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+.stat-ic { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex: none; }
+.stat-card.pass .stat-ic { background: var(--good-soft); color: var(--good-ink); }
+.stat-card.fail .stat-ic { background: var(--critical-soft); color: var(--critical-ink); }
+.stat-card.total .stat-ic { background: var(--accent-soft); color: var(--accent-ink); }
+.stat-num { font-size: 30px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-lbl { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 4px; }
+
 .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 14px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
 .section-title::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; }

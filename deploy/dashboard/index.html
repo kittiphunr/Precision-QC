@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" />
-  <link rel="stylesheet" href="style-dash.css?v=35105e0d97b7" />
+  <link rel="stylesheet" href="style-dash.css?v=6ce52ecf03f8" />
   <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 </head>
 <body>
@@ -88,6 +88,27 @@
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 16V5m0 0-4 4m4-4 4 4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
       </header>
+
+      <section class="stats" aria-label="Summary">
+        <div class="stat-card pass">
+          <span class="stat-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div><div class="stat-num" id="stat-pass">0</div><div class="stat-lbl" data-i18n="sum.pass">ผ่าน</div></div>
+        </div>
+        <div class="stat-card fail">
+          <span class="stat-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </span>
+          <div><div class="stat-num" id="stat-fail">0</div><div class="stat-lbl" data-i18n="sum.fail">ไม่ผ่าน</div></div>
+        </div>
+        <div class="stat-card total">
+          <span class="stat-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </span>
+          <div><div class="stat-num" id="stat-total">0</div><div class="stat-lbl" data-i18n="stat.total">ทั้งหมด</div></div>
+        </div>
+      </section>
 
       <main id="main" class="bento">
         <section class="panel block hero-card" aria-labelledby="steps-title">
@@ -236,7 +257,7 @@
     <div class="busy-box"><div class="spinner"></div><span id="busy-text"></span></div>
   </div>
 
-  <script src="i18n.js?v=d9c1d8672667"></script>
-  <script src="app.js?v=40c1b42bd45d"></script>
+  <script src="i18n.js?v=ab1df6704cca"></script>
+  <script src="app.js?v=d2d65dc40944"></script>
 </body>
 </html>
