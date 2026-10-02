@@ -258,7 +258,7 @@ main.wrap { padding-top: 26px; padding-bottom: 44px; display: grid; gap: 22px; }
    794 x 1123 px = 210 x 297 mm at 96 dpi. Always light.
    ================================================================= */
 .report-host { position: fixed; left: 0; top: 0; z-index: -10; pointer-events: none; }
-.rpage { width: 794px; height: 1123px; background: #fff; color: #1a1f26; font-family: "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 11px; line-height: 1.5; padding: 38px 48px 0; position: relative; overflow: hidden; }
+.rpage { width: 794px; height: 1123px; background: #fff; color: #1a1f26; font-family: "Sarabun", "TH Sarabun New", "TH SarabunPSK", "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 11px; line-height: 1.5; padding: 38px 48px 0; position: relative; overflow: hidden; }
 .rpage + .rpage { margin-top: 20px; }
 .r-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 2px solid #1f3350; padding-bottom: 10px; }
 .r-lab b { display: block; font-size: 15px; color: #1f3350; }
