@@ -55,6 +55,15 @@ function setEngine(state, key) {
   $("#engine-text").textContent = t(key);
 }
 
+// mark the chosen button of a segmented switch as active (class + aria-pressed)
+function markActive(selector, isActive) {
+  document.querySelectorAll(selector).forEach((b) => {
+    const on = isActive(b);
+    b.classList.toggle("is-active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+}
+
 function applyLang(next) {
   lang = next;
   try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* ignore */ }
@@ -62,7 +71,7 @@ function applyLang(next) {
   document.title = t("app.title");
   document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
-  document.querySelectorAll(".lang-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  markActive(".lang-switch button", (b) => b.dataset.lang === lang);
   const credit = $("#credit");
   credit.lang = document.documentElement.lang;
   credit.innerHTML = `${t("credit.line1", { name: `<b>${esc(t("credit.name"))}</b>` })}<br />${esc(t("credit.line2"))}`;
@@ -89,7 +98,7 @@ function applyTheme(choice) {
     if (choice === "auto") localStorage.removeItem(THEME_KEY);
     else localStorage.setItem(THEME_KEY, choice);
   } catch (_) { /* ignore */ }
-  document.querySelectorAll(".theme-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeChoice === choice)));
+  markActive(".theme-switch button", (b) => b.dataset.themeChoice === choice);
 }
 
 document.querySelectorAll(".theme-switch button").forEach((b) => b.addEventListener("click", () => applyTheme(b.dataset.themeChoice)));
