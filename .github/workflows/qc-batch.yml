@@ -1,0 +1,48 @@
+name: QC Batch
+
+# Push images into inputs/ (or run manually from the Actions tab) to get a
+# PASS / FAIL table in the run summary plus downloadable report images.
+on:
+  push:
+    paths:
+      - "inputs/**"
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Folder with images"
+        default: "inputs"
+      min_score:
+        description: "Minimum score to PASS"
+        default: "60"
+      plate_cm:
+        description: "Plate diameter (cm)"
+        default: "8.5"
+      strict:
+        description: "Fail the workflow if any image FAILs"
+        type: boolean
+        default: false
+
+jobs:
+  qc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run Precision QC
+        env:
+          FOLDER: ${{ inputs.folder || 'inputs' }}
+          MIN_SCORE: ${{ inputs.min_score || '60' }}
+          PLATE_CM: ${{ inputs.plate_cm || '8.5' }}
+          STRICT: ${{ inputs.strict && '--strict' || '' }}
+        run: |
+          python -m precision_qc "$FOLDER" -o reports \
+            --set min_score="$MIN_SCORE" --set plate_cm="$PLATE_CM" $STRICT
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qc-reports
+          path: reports/

@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Unit tests
+        run: pytest -q
+      - name: deploy/ matches the source
+        run: |
+          args=""; while read -r d; do [ -n "$d" ] && args="$args --lock-domain $d"; done < hosting/deploy-domains.txt
+          python scripts/build_site.py --out "$RUNNER_TEMP/site" $args
+          diff -r "$RUNNER_TEMP/site" deploy || { echo "::error::deploy/ is out of date — run: python scripts/build_site.py --out deploy $args"; exit 1; }
+      - name: Analyse sample images
+        run: python -m precision_qc samples -o reports
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample-reports
+          path: reports/
