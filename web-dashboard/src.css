@@ -49,8 +49,12 @@
   .pure-table tbody tr:last-child td { @apply border-b-0; }
 
   /* app shell */
-  .rail { @apply grid gap-4 sticky top-4 self-start min-w-0; }
-  .sidebar { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 sticky top-4 flex flex-col gap-5; }
+  /* 3-column shell: sidebar | content | rail — stacks on < lg */
+  .app { @apply max-w-screen-2xl mx-auto p-4 flex flex-col lg:flex-row gap-4 items-start; }
+  .sidebar { @apply w-full lg:w-64 lg:shrink-0; }
+  .rail { @apply w-full lg:w-96 lg:shrink-0; }
+  .rail { @apply grid gap-4 lg:sticky lg:top-4 self-start min-w-0; }
+  .sidebar { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 lg:sticky lg:top-4 flex flex-col gap-5; }
   .side-brand { @apply flex gap-3 items-center; }
   .side-brand .logo { @apply text-white bg-slate-900 dark:bg-slate-700 rounded-xl w-10 h-10 grid place-items-center shrink-0; }
   .side-brand h1 { @apply m-0 text-base font-bold; }
@@ -75,7 +79,7 @@
   .side-foot .credit b { @apply text-slate-600 dark:text-slate-300 font-semibold; }
 
   /* content + pagebar */
-  .content { @apply grid gap-4 min-w-0; }
+  .content { @apply flex-1 w-full grid gap-4 min-w-0; }
   .pagebar { @apply flex items-center justify-between gap-4 px-1.5 py-1; }
   .page-title { @apply m-0 text-2xl font-extrabold tracking-tight; }
   .page-sub { @apply mt-1 mb-0 text-sm text-slate-500 dark:text-slate-400; }
@@ -84,7 +88,7 @@
   .bento > *, #results > * { @apply min-w-0; }
 
   /* stat cards */
-  .stats { @apply grid grid-cols-3 gap-4; }
+  .stats { @apply grid grid-cols-1 sm:grid-cols-3 gap-4; }
   .stat-card { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-5 py-4 flex items-center gap-3.5; }
   .stat-ic { @apply w-12 h-12 rounded-xl grid place-items-center shrink-0; }
   .stat-card.pass .stat-ic { @apply bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300; }
@@ -103,10 +107,10 @@
   .hero-text { @apply min-w-0; }
   .hero-badge { @apply inline-block text-xs font-bold uppercase tracking-wide bg-white/20 border border-white/30 px-3 py-1 rounded-full; }
   .hero h3 { @apply mt-3 mb-0 text-xl font-bold leading-snug max-w-prose; }
-  .hero-mark { @apply shrink-0 w-14 h-14 grid place-items-center text-white bg-white/15 border border-white/30 rounded-2xl; }
+  .hero-mark { @apply hidden sm:grid shrink-0 w-14 h-14 place-items-center text-white bg-white/15 border border-white/30 rounded-2xl; }
 
   /* steps */
-  .steps { @apply list-none p-0 m-0 grid grid-cols-3 gap-3.5 items-stretch; }
+  .steps { @apply list-none p-0 m-0 grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-stretch; }
   .steps > li { @apply p-0 min-w-0 flex; }
   .step { @apply flex-1 min-w-0 flex gap-3 items-start bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4; }
   .step > div { @apply min-w-0 flex-1; }
