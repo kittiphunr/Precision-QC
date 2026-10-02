@@ -158,14 +158,17 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .hero-mark { flex: none; width: 60px; height: 60px; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .3); border-radius: 18px; }
 @media (max-width: 560px) { .hero { padding: 22px; } .hero-mark { display: none; } }
 
-/* steps: a vertical list (number | title + description) that can never
-   overlap or overflow, at any column width (overrides the Pure flex grid) */
-.steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr; gap: 12px; }
-.steps > li { width: 100%; padding: 0; min-width: 0; }
-.step { display: flex; gap: 14px; align-items: flex-start; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px 18px; }
+/* steps: a horizontal row (3 across) that shrinks cleanly — columns use
+   minmax(0,1fr) and the text has min-width:0 so it wraps inside each card
+   instead of forcing width; drops to 2 / 1 columns on narrow screens. */
+.steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.steps > li { padding: 0; min-width: 0; display: flex; } /* flex so the card fills the row height without height:100% collapsing the track */
+.step { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: flex-start; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
 .step > div { min-width: 0; flex: 1; } /* let the text wrap instead of forcing width */
-.step .num { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; font-size: 16px; }
-.step b { display: block; font-size: 15.5px; }
+.step .num { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; font-size: 15px; }
+.step b { display: block; font-size: 15px; }
+@media (max-width: 1320px) and (min-width: 861px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
 .step p { margin: 3px 0 0; font-size: 13.5px; color: var(--muted); }
 
 /* ---------------------------------------------------------- upload + camera */
