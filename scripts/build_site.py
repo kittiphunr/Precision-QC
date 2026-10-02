@@ -38,7 +38,8 @@ ROOT = Path(__file__).resolve().parent.parent
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
 EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
-                  "web-tw": ("tw.css", "i18n.js", "app.js")}
+                  "web-tw": ("tw.css", "i18n.js", "app.js"),
+                  "web-lab": ("style-lab.css", "i18n.js", "app.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
 # pinned so the built output is identical locally and in CI (the drift check in
@@ -158,10 +159,11 @@ def build(out: Path, lock_domains=None) -> Path:
     samples = sorted(p.name for p in (ROOT / "samples").glob("*") if p.suffix.lower() in IMAGE_EXT)
 
     print(f"Built (engine {build_id}, {len(py_files)} python files, {len(samples)} samples):")
-    # each edition goes in its own self-contained folder — upload either one whole
-    _assemble("web", out / "pure", build_id, samples, lock_domains)        # Pure.css edition
+    # each edition goes in its own self-contained folder — upload any one whole
+    _assemble("web", out / "pure", build_id, samples, lock_domains)         # Pure.css edition
     _assemble("web-tw", out / "tailwind", build_id, samples, lock_domains)  # Tailwind edition
-    _landing(out)  # a chooser at the root so / is not a 404 when both are uploaded
+    _assemble("web-lab", out / "lab", build_id, samples, lock_domains)      # Lab edition (+ webcam)
+    _landing(out)  # a chooser at the root so / is not a 404 when all are uploaded
     return out
 
 
@@ -195,7 +197,8 @@ def _landing(out: Path) -> None:
     <h1>Precision QC</h1>
     <p>เลือกเวอร์ชันหน้าตาที่ต้องการใช้งาน · Choose an edition</p>
     <a class="ed" href="pure/"><span>Pure.css<small>เวอร์ชันดั้งเดิม · original edition</small></span><span class="arrow">→</span></a>
-    <a class="ed" href="tailwind/"><span>Tailwind CSS<small>เวอร์ชันใหม่ · new edition</small></span><span class="arrow">→</span></a>
+    <a class="ed" href="tailwind/"><span>Tailwind CSS<small>โทนเขียว · green theme</small></span><span class="arrow">→</span></a>
+    <a class="ed" href="lab/"><span>Lab<small>สำหรับห้องแล็บ + ถ่ายจากกล้อง · lab UI with webcam</small></span><span class="arrow">→</span></a>
   </div>
 </body>
 </html>
