@@ -165,6 +165,7 @@ $("#cfg-reset").addEventListener("click", () => {
 });
 $("#rerun").addEventListener("click", async () => {
   const files = results.map((r) => r.file);
+  closeResult();
   results = [];
   $("#results").innerHTML = "";
   await runFiles(files);
@@ -269,6 +270,7 @@ async function runFiles(files) {
       results.push(item);
       card.id = `r-${item.id}`;
       mountCard(item);
+      openResult(item); // modal editions: pop the result up full-screen (no-op otherwise)
     } catch (err) {
       console.error(err);
       card.innerHTML = `<p class="error">${esc(t("card.error", { name: file.name }))}</p>`;
@@ -405,6 +407,7 @@ function renderSummary() {
   setStat("stat-pass", nPass);
   setStat("stat-fail", results.length - nPass);
   setStat("stat-total", results.length);
+  const viewCell = resultModal() ? `<td><button type="button" class="pure-button view-btn">${t("btn.view")}</button></td>` : "";
   $("#summary-body").innerHTML = results
     .map(({ id, report: r }) => `
       <tr data-target="r-${id}">
@@ -413,14 +416,44 @@ function renderSummary() {
         <td class="num">${fmt(r.score)}</td>
         <td>${r.grade} · ${t(`grade.${r.grade}`)}</td>
         <td>${esc(r.reasons.length ? r.reasons.map((x) => t(`reason.short.${x.code}`)).join(", ") : "—")}</td>
+        ${viewCell}
       </tr>`)
     .join("");
 }
 
 $("#summary-body").addEventListener("click", (e) => {
   const tr = e.target.closest("tr");
-  if (tr) document.getElementById(tr.dataset.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!tr) return;
+  const id = Number(tr.dataset.target.slice(2)); // "r-12" -> 12
+  const item = results.find((r) => r.id === id);
+  if (resultModal() && item) { openResult(item); return; }
+  document.getElementById(tr.dataset.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
+
+/* --------------------------------------------------------- result modal
+ * Opt-in: active only on editions whose page includes #result-modal (e.g.
+ * Dashboard). Shows a result card full-screen with a close button; other
+ * editions keep the inline cards and these helpers are no-ops. */
+function resultModal() { return document.getElementById("result-modal"); }
+function stowModalCard() {
+  const m = resultModal(); if (!m) return;
+  const card = m.querySelector(".rm-body").firstElementChild;
+  if (card) $("#results").appendChild(card); // park it back (hidden) in #results
+}
+function openResult(item) {
+  const m = resultModal(); if (!m || !item) return;
+  stowModalCard();
+  m.querySelector(".rm-body").appendChild(item.card);
+  m.hidden = false;
+  document.body.classList.add("modal-open");
+  m.querySelector(".rm-close")?.focus();
+}
+function closeResult() {
+  const m = resultModal(); if (!m) return;
+  stowModalCard();
+  m.hidden = true;
+  document.body.classList.remove("modal-open");
+}
 
 function lightbox(src) {
   const box = document.createElement("div");
@@ -450,10 +483,20 @@ $("#dl-csv").addEventListener("click", () => {
 });
 
 $("#clear").addEventListener("click", () => {
+  closeResult();
   results = [];
   $("#results").innerHTML = "";
   renderSummary();
 });
+
+/* result modal: close on the ×, on the backdrop, or with Escape */
+(function wireResultModal() {
+  const m = resultModal();
+  if (!m) return;
+  m.querySelector(".rm-close")?.addEventListener("click", closeResult);
+  m.addEventListener("click", (e) => { if (e.target === m) closeResult(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !m.hidden) closeResult(); });
+})();
 
 $("#dl-pdf-all").addEventListener("click", () => downloadPdf(results));
 
