@@ -70,10 +70,22 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .pure-button[disabled] { opacity: .5; cursor: default; box-shadow: none; }
 
 /* ---------------------------------------------------------- forms + tables */
-.pure-form input[type] { background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 15px; padding: .55em .7em; }
-.pure-form input[type]:focus { border-color: var(--accent); outline: 2px solid var(--accent-soft); }
+.pure-form input[type] {
+  background: var(--soft); color: var(--ink);
+  border: 1.5px solid var(--line); border-radius: 12px;
+  font-family: inherit; font-size: 15px; line-height: 1.4;
+  padding: .72em .9em; width: 100%; box-sizing: border-box;
+  transition: border-color .14s, background .14s, box-shadow .14s;
+}
+.pure-form input[type]::placeholder { color: var(--muted); opacity: 1; }
+.pure-form input[type]:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.pure-form input[type]:focus {
+  border-color: var(--accent); background: var(--card); outline: none;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.pure-form input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .pure-input-1 { width: 100%; }
-.pure-form-stacked label { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.pure-form-stacked label { display: flex; flex-direction: column; gap: 7px; margin: 0; font-size: 13px; color: var(--ink-2); font-weight: 600; letter-spacing: .1px; }
 .pure-form-stacked input[type] { margin: 0; }
 .pure-table { border: 1px solid var(--line); border-collapse: separate; border-spacing: 0; border-radius: 14px; overflow: hidden; color: var(--ink); width: 100%; font-size: 14px; }
 .pure-table thead { background: var(--soft); color: var(--muted); }
@@ -184,7 +196,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.55; t
 .cam-video { width: 100%; max-height: 440px; background: #000; border-radius: 12px; display: block; object-fit: contain; }
 .cam-hint { color: var(--muted); font-size: 14px; margin: 12px 0; }
 .cam-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.cam-select { background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; padding: .5em .6em; }
+.cam-select { background: var(--soft); color: var(--ink); border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; font-size: 14px; padding: .6em .8em; transition: border-color .14s, box-shadow .14s; }
+.cam-select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
 .samples { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; color: var(--muted); font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip.pure-button { padding: .32em 1.05em; font-size: 13px; background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
