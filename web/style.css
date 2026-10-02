@@ -145,8 +145,17 @@ body {
   background: transparent; color: #fff; border: 0; border-radius: 999px; margin: 0;
   font-size: 13px; padding: .32em .9em; opacity: .78;
 }
-.seg .pure-button:hover, .seg .pure-button:focus { color: #fff; opacity: 1; background: rgba(255, 255, 255, .1); }
-.seg .pure-button[aria-pressed="true"] { background: #fff; color: var(--navy); opacity: 1; font-weight: 600; }
+.seg.pure-button-group .pure-button:hover, .seg.pure-button-group .pure-button:focus-visible { color: #fff; opacity: 1; background: rgba(255, 255, 255, .14); }
+.seg.pure-button-group .pure-button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.seg.pure-button-group .pure-button:active { background: rgba(255, 255, 255, .24); box-shadow: none; }
+/* active choice — must outrank the :first-child / :last-child base rule above */
+.seg.pure-button-group .pure-button.is-active,
+.seg.pure-button-group .pure-button.is-active:hover,
+.seg.pure-button-group .pure-button.is-active:first-child,
+.seg.pure-button-group .pure-button.is-active:last-child {
+  background: #fff; color: var(--navy); opacity: 1; font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
 
 .statusbar { background: var(--navy-2); border-top: 1px solid rgba(255, 255, 255, .08); }
 .statusbar .wrap { padding-top: 6px; padding-bottom: 6px; }
