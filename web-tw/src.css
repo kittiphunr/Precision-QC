@@ -254,11 +254,16 @@ main.wrap { padding-top: 26px; padding-bottom: 44px; display: grid; gap: 22px; }
 }
 
 /* =================================================================
-   A4 report pages — identical to the other edition (formal document).
+   A4 report pages (rendered off-screen, captured into the PDF).
    794 x 1123 px = 210 x 297 mm at 96 dpi. Always light.
    ================================================================= */
 .report-host { position: fixed; left: 0; top: 0; z-index: -10; pointer-events: none; }
-.rpage { width: 794px; height: 1123px; background: #fff; color: #1a1f26; font-family: "Sarabun", "TH Sarabun New", "TH SarabunPSK", "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 11px; line-height: 1.5; padding: 38px 48px 0; position: relative; overflow: hidden; }
+.rpage {
+  width: 794px; height: 1123px; background: #fff; color: #1a1f26;
+  font-family: "Sarabun", "TH Sarabun New", "TH SarabunPSK", "IBM Plex Sans Thai", "Noto Sans SC", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 11px; line-height: 1.5;
+  padding: 38px 48px 0; position: relative; overflow: hidden;
+}
 .rpage + .rpage { margin-top: 20px; }
 .r-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 2px solid #1f3350; padding-bottom: 10px; }
 .r-lab b { display: block; font-size: 15px; color: #1f3350; }
@@ -268,7 +273,10 @@ main.wrap { padding-top: 26px; padding-bottom: 44px; display: grid; gap: 22px; }
 .r-title { font-size: 17px; font-weight: 700; margin: 12px 0 0; color: #111; }
 .r-subtitle { color: #5b6573; margin-bottom: 4px; }
 .r-sec { margin-top: 14px; }
-.r-sec h4 { margin: 0 0 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #1f3350; border-bottom: 1px solid #d5dae1; padding-bottom: 3px; }
+.r-sec h4 {
+  margin: 0 0 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+  color: #1f3350; border-bottom: 1px solid #d5dae1; padding-bottom: 3px;
+}
 .r-grid { display: flex; gap: 18px; }
 .r-grid > .grow { flex: 1; min-width: 0; }
 .r-kv { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.35; }
@@ -303,7 +311,11 @@ main.wrap { padding-top: 26px; padding-bottom: 44px; display: grid; gap: 22px; }
 .r-sign .line { border-bottom: 1px solid #5b6573; height: 30px; margin-bottom: 4px; }
 .r-sign span { display: block; font-size: 10.5px; color: #5b6573; }
 .r-sign b { font-size: 11.5px; }
-.r-foot { position: absolute; left: 48px; right: 48px; bottom: 24px; border-top: 1px solid #d5dae1; padding-top: 6px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; font-size: 9.5px; line-height: 1.5; color: #5b6573; }
+.r-foot {
+  position: absolute; left: 48px; right: 48px; bottom: 26px;
+  border-top: 1px solid #d5dae1; padding-top: 6px;
+  display: flex; justify-content: space-between; gap: 16px; font-size: 9.5px; color: #5b6573;
+}
 .r-foot .disc { max-width: 470px; } .r-foot > span:last-child { text-align: right; white-space: nowrap; }
 .r-panels { display: flex; flex-wrap: wrap; gap: 12px 14px; }
 .r-panels figure { margin: 0; width: 222px; }
@@ -313,6 +325,7 @@ main.wrap { padding-top: 26px; padding-bottom: 44px; display: grid; gap: 22px; }
 .r-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 16px; font-size: 10px; color: #5b6573; margin-top: 10px; margin-bottom: 4px; line-height: 1.6; }
 .r-legend i { display: inline-block; width: 10px; height: 10px; border: 1px solid #c3c9d1; margin-right: 4px; vertical-align: -1px; }
 .r-sw { display: inline-block; width: 22px; height: 12px; border: 1px solid #c3c9d1; vertical-align: -2px; }
+/* fallback when a page would still run into the footer */
 .rpage.compact { font-size: 10px; line-height: 1.42; }
 .rpage.compact .r-sec { margin-top: 8px; }
 .rpage.compact .r-kv, .rpage.compact .r-table { font-size: 9.5px; }
@@ -320,3 +333,13 @@ main.wrap { padding-top: 26px; padding-bottom: 44px; display: grid; gap: 22px; }
 .rpage.compact .r-photo, .rpage.compact .r-photo img { width: 150px; }
 .r-credit { margin-top: 18px; padding-top: 8px; border-top: 1px dashed #d5dae1; font-size: 9.5px; color: #5b6573; text-align: center; line-height: 1.5; }
 .r-end { text-align: center; color: #5b6573; margin-top: 16px; letter-spacing: 1px; font-size: 10.5px; }
+
+/* Tailwind preflight vs. the Pure.css base the report was designed on.
+   html2canvas finds each font's baseline with a hidden 1x1 <img> placed next
+   to sample text in <body>; preflight's img { display: block } pushes that
+   image onto its own line, so every line of report text is drawn too low
+   (sitting on table borders). Keep that probe inline, and give the report the
+   same img / h4 defaults it gets in the Pure.css edition. */
+body > div[style*="visibility: hidden"] > img { display: inline; }
+.report-host img { vertical-align: baseline; max-width: none; }
+.report-host h4 { font-weight: 700; }
