@@ -89,6 +89,25 @@
         <strong data-i18n="drop.title">ลากภาพจานเพาะเชื้อมาวาง หรือคลิกเพื่อเลือก</strong>
         <span data-i18n="drop.hint">JPG · PNG · WEBP — เลือกได้หลายภาพพร้อมกัน</span>
       </label>
+      <div class="camera">
+        <button type="button" id="cam-toggle" class="pure-button cam-open">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 7h3l2-2h8l2 2h3v12H3V7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          <span data-i18n="cam.open">ถ่ายภาพจากกล้อง</span>
+        </button>
+        <div id="cam-panel" class="cam-panel" hidden>
+          <video id="cam-video" class="cam-video" autoplay playsinline muted></video>
+          <p class="cam-hint" data-i18n="cam.hint">วางจานเพาะเชื้อให้อยู่กลางภาพ แสงสม่ำเสมอ แล้วกดถ่ายภาพ</p>
+          <div class="cam-actions">
+            <select id="cam-select" class="cam-select" aria-label="Select camera" hidden></select>
+            <button type="button" id="cam-shot" class="pure-button pure-button-primary">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.3" fill="currentColor"/></svg>
+              <span data-i18n="cam.capture">ถ่ายภาพ</span>
+            </button>
+            <button type="button" id="cam-close" class="pure-button" data-i18n="cam.close">ปิดกล้อง</button>
+          </div>
+          <canvas id="cam-canvas" hidden></canvas>
+        </div>
+      </div>
       <div class="samples">
         <span data-i18n="samples.label">ลองภาพตัวอย่าง</span>
         <div id="sample-list" class="chips"></div>
