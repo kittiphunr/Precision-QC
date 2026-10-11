@@ -22,7 +22,8 @@ let defaults = {};
 let results = []; // { id, file, report, analyzedAt, reportNo, card }
 let seq = 0;
 let bseq = 0;
-let batches = []; // batch photos: { id, file, data, items, el }
+let batches = []; // batch photos: { id, file, data, items, el, labels }
+const labelStore = new Map(); // "name|size" -> { plateNo: dish ID typed by the user }, survives re-runs
 const BATCH_KEY = "precision-qc-batch";
 let batchMode = false;
 try { batchMode = localStorage.getItem(BATCH_KEY) === "1"; } catch (_) { /* storage unavailable */ }
@@ -235,6 +236,9 @@ const BATCH_CSS = `
 .batch-body figcaption,.batch-note{opacity:.75;font-size:.85em;margin:.4rem 0 0}
 .batch-table tr[data-item]{cursor:pointer}
 .batch-table tr[data-item]:hover{background:rgba(128,128,128,.12)}
+.batch-svg{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in}
+.batch-svg text{paint-order:stroke;stroke:#fff;stroke-linejoin:round;font-family:system-ui,sans-serif;font-weight:700}
+.batch-id{width:100%;min-width:9em;box-sizing:border-box;padding:6px 8px;border:1px solid rgba(128,128,128,.5);border-radius:6px;font:inherit;background:transparent;color:inherit}
 .rank-badge{display:inline-block;min-width:1.9em;text-align:center;padding:1px 9px;border-radius:999px;font-weight:700;font-size:.85em;background:rgba(128,128,128,.25);white-space:nowrap}
 .rank-badge.r1{background:#f5c542;color:#3b2d00}
 `;
@@ -272,6 +276,41 @@ function relabelBatchSamples() {
 const rankBadge = (it) => it.batch
   ? ` <span class="rank-badge r${it.batch.rank}">${esc(t("batch.rankBadge", { r: it.batch.rank, n: it.batch.plates }))}</span>` : "";
 
+const plateName = (file, rep, label) => (label ? `${label} (#${rep.plate})` : `${stem(file.name)} #${rep.plate}`);
+const labelKey = (file) => `${file.name}|${file.size}`;
+
+// photo with every dish circled and tagged "#N  R<rank>" + the dish ID typed by the user
+function overviewSvg(b) {
+  const [W, H] = b.data.photo_size;
+  const fs = W / 46, fs2 = W / 58, sw = Math.max(3, W / 380);
+  const marks = b.items.map((it) => {
+    const r = it.report, c = r.circle, col = r.passed ? "#15935a" : "#d62f2f";
+    const label = (it.label || "").slice(0, 28);
+    return `<circle cx="${c.cx}" cy="${c.cy}" r="${c.r}" fill="none" stroke="${col}" stroke-width="${sw}" />
+      <text x="${c.cx}" y="${c.cy - c.r * 0.5}" text-anchor="middle" fill="${col}" font-size="${fs}" stroke-width="${fs / 5}">#${r.plate} · R${r.rank}</text>
+      ${label ? `<text x="${c.cx}" y="${c.cy - c.r * 0.5 + fs * 1.15}" text-anchor="middle" fill="#14202c" font-size="${fs2}" stroke-width="${fs2 / 5}">${esc(label)}</text>` : ""}`;
+  }).join("");
+  return `<svg class="batch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("batch.alt"))}"><image href="${b.data.photo}" width="${W}" height="${H}" />${marks}</svg>`;
+}
+
+function bindOverview(b) {
+  $(".batch-svg", b.el).addEventListener("click", () => {
+    const box = document.createElement("div");
+    box.className = "lightbox";
+    box.innerHTML = overviewSvg(b).replace('class="batch-svg"', 'class="batch-svg" style="max-width:96vw;max-height:94vh;width:auto;cursor:zoom-out"');
+    box.addEventListener("click", () => box.remove());
+    document.body.appendChild(box);
+  });
+}
+
+function setPlateLabel(b, it, value) {
+  it.label = value.trim();
+  b.labels[it.report.plate] = it.label;
+  it.report.name = plateName(b.file, it.report, it.label);
+  mountCard(it);
+  renderSummary();
+}
+
 function showItem(id) {
   const item = results.find((r) => r.id === id);
   if (resultModal() && item) openResult(item);
@@ -287,6 +326,7 @@ function renderBatch(b) {
       <tr data-item="${it.id}">
         <td><span class="rank-badge r${r.rank}">${r.rank}</span></td>
         <td>#${r.plate}</td>
+        <td><input type="text" class="batch-id" maxlength="60" value="${esc(it.label || "")}" placeholder="${esc(t("batch.ph"))}" aria-label="${esc(`${t("batch.th.label")} #${r.plate}`)}" /></td>
         <td><span class="status ${r.passed ? "pass" : "fail"}">${t(r.passed ? "tile.ok" : "tile.ng")}</span></td>
         <td class="num">${fmt(r.score)}</td>
         <td>${r.grade} · ${t(`grade.${r.grade}`)}</td>
@@ -304,11 +344,11 @@ function renderBatch(b) {
       <button type="button" class="pure-button pure-button-primary dl-batch">${esc(t("batch.pdf"))}</button>
     </div>
     <div class="batch-body">
-      <figure><img src="${b.data.overview}" alt="${esc(t("batch.alt"))}" /><figcaption>${esc(t("batch.note"))}</figcaption></figure>
+      <figure>${overviewSvg(b)}<figcaption>${esc(t("batch.note"))}</figcaption></figure>
       <div class="table-wrap">
         <table class="pure-table pure-table-horizontal batch-table">
           <thead><tr>
-            <th>${esc(t("batch.th.rank"))}</th><th>${esc(t("batch.th.plate"))}</th><th>${esc(t("th.result"))}</th>
+            <th>${esc(t("batch.th.rank"))}</th><th>${esc(t("batch.th.plate"))}</th><th>${esc(t("batch.th.label"))}</th><th>${esc(t("th.result"))}</th>
             <th class="num">${esc(t("th.score"))}</th><th>${esc(t("th.grade"))}</th><th>${esc(t("th.note"))}</th><th></th>
           </tr></thead>
           <tbody>${rows}</tbody>
@@ -316,8 +356,29 @@ function renderBatch(b) {
       </div>
     </div>`;
   $(".dl-batch", b.el).addEventListener("click", () => downloadPdf(ranked));
-  $(".batch-body img", b.el).addEventListener("click", (e) => lightbox(e.target.src));
-  b.el.querySelectorAll("tr[data-item]").forEach((tr) => tr.addEventListener("click", () => showItem(Number(tr.dataset.item))));
+  bindOverview(b);
+  const hint = document.createElement("p");
+  hint.className = "batch-note";
+  hint.textContent = t("batch.labelHint");
+  $(".table-wrap", b.el).appendChild(hint);
+  b.el.querySelectorAll("tr[data-item]").forEach((tr) => {
+    const it = b.items.find((x) => x.id === Number(tr.dataset.item));
+    const input = $(".batch-id", tr);
+    input.addEventListener("click", (e) => e.stopPropagation());
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const nextId = tr.nextElementSibling?.dataset.item;
+      input.blur(); // fires "change"
+      if (nextId) b.el.querySelector(`tr[data-item="${nextId}"] .batch-id`)?.focus();
+    });
+    input.addEventListener("change", () => {
+      setPlateLabel(b, it, input.value);
+      $(".batch-svg", b.el).outerHTML = overviewSvg(b); // refresh the tags only; the table keeps its focus
+      bindOverview(b);
+    });
+    tr.addEventListener("click", () => showItem(Number(tr.dataset.item)));
+  });
 }
 
 async function runBatchFile(file, cfgJson) {
@@ -329,19 +390,22 @@ async function runBatchFile(file, cfgJson) {
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const data = JSON.parse(api.analyze_plates_to_json(bytes, cfgJson, file.name));
+    const key = labelKey(file);
+    if (!labelStore.has(key)) labelStore.set(key, {});
     if (!data.plates.length) {
       el.innerHTML = `<p class="error">${esc(t("batch.none", { name: file.name }))}</p>`;
       return;
     }
     const analyzedAt = new Date();
-    const b = { id: ++bseq, file, data, items: [], el };
+    const b = { id: ++bseq, file, data, items: [], el, labels: labelStore.get(key) };
     el.id = `b-${b.id}`;
     const cards = [];
     for (const rep of [...data.plates].sort((x, y) => x.plate - y.plate)) { // reading order: #1, #2, ...
-      rep.name = `${stem(file.name)} #${rep.plate}`;
+      const label = b.labels[rep.plate] || "";
+      rep.name = plateName(file, rep, label);
       const card = document.createElement("article");
       card.className = "panel card";
-      const item = { id: ++seq, file, report: rep, analyzedAt, reportNo: newReportNo(analyzedAt), card,
+      const item = { id: ++seq, file, report: rep, analyzedAt, reportNo: newReportNo(analyzedAt), card, label,
         batch: { id: b.id, rank: rep.rank, plate: rep.plate, plates: data.plates.length } };
       card.id = `r-${item.id}`;
       b.items.push(item);
@@ -889,7 +953,7 @@ async function downloadPdf(items) {
       author: `${t("credit.name", {}, lng)}, ${t("credit.line2", {}, lng)}`,
     });
     const name = items.length === 1
-      ? `${items[0].reportNo}_${stem(items[0].report.name)}_${lng.toUpperCase()}.pdf`
+      ? `${items[0].reportNo}_${stem(items[0].report.name).replace(/[\\/:*?"<>|\s]+/g, "_")}_${lng.toUpperCase()}.pdf`
       : `Precision-QC_reports_${isoDate(issued)}_${lng.toUpperCase()}.pdf`;
     download(name, pdf.output("blob"));
   } catch (err) {

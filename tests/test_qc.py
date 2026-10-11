@@ -178,10 +178,12 @@ def test_api_plates_json_for_web():
     buf = io.BytesIO()
     Image.fromarray(photo).save(buf, "PNG")
     out = json.loads(analyze_plates_to_json(buf.getvalue(), json.dumps({"min_score": 55}), "two.png"))
-    assert out["summary"]["plates"] == 2 and out["overview"].startswith("data:image")
+    assert out["summary"]["plates"] == 2 and out["photo"].startswith("data:image") and out["photo_size"][0] > 0
     assert [p["rank"] for p in out["plates"]] == [1, 2]  # ranked order
     assert all(p["panels"] and p["plate"] in (1, 2) and p["source"] == "two.png" for p in out["plates"])
     assert out["plates"][0]["config"]["min_score"] == 55
+    w, h = out["photo_size"]
+    assert all(0 < p["circle"]["cx"] < w and 0 < p["circle"]["cy"] < h and p["circle"]["r"] > 20 for p in out["plates"])
 
 
 def test_batch_runs_with_32bit_indices(monkeypatch):

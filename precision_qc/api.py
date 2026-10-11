@@ -6,8 +6,10 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Optional
 
+from PIL import Image
+
 from .analyzer import QCConfig, analyze
-from .batch import analyze_plates, overview_image
+from .batch import analyze_plates
 from .render import PANEL_TITLES, render_panels, to_data_url
 
 
@@ -40,9 +42,12 @@ def analyze_plates_bytes(data: Any, config: Optional[Dict[str, Any]] = None, nam
     plates = []
     for p in res.ranked:
         rep = dict(p.analysis.report)
+        rep["circle"] = {"cx": round(p.center[0], 1), "cy": round(p.center[1], 1), "r": round(p.radius, 1)}  # photo pixels
         rep["panels"] = [{"key": k, "title": PANEL_TITLES[k], "src": to_data_url(im)} for k, im in render_panels(p.analysis).items()]
         plates.append(rep)
-    return {"summary": res.summary, "overview": to_data_url(overview_image(res)), "plates": plates}
+    # the plain photo + circles: the web UI draws the labelled overview itself so the user can type a dish ID
+    h, w = res.photo.shape[:2]
+    return {"summary": res.summary, "photo": to_data_url(Image.fromarray(res.photo)), "photo_size": [w, h], "plates": plates}
 
 
 def analyze_plates_to_json(data: Any, config_json: str = "{}", name: str = "photo") -> str:
