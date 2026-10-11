@@ -101,6 +101,25 @@ CI จะแจ้งเตือนถ้าโฟลเดอร์ `deploy/` 
 - หรือไปที่ **Actions → QC Batch → Run workflow** แล้วกำหนด `folder`, `min_score`, `plate_cm`, `strict`
 - ผลลัพธ์: ตารางในหน้า run summary และ artifact `qc-reports` (ภาพรายงาน PNG, JSON, `summary.csv`)
 
+### ตรวจแบบชุด: หลายจานในภาพเดียว (`--multi`)
+ถ่ายจานเพาะเชื้อหลายจานในภาพเดียว (ตัวอย่างใน `samples/แบบชุด/`) แล้วให้ระบบแยกจานออกมาประเมินทีละจานและจัดอันดับ
+
+```bash
+python -m precision_qc "samples/แบบชุด" --multi -o reports
+```
+
+1. **แยกจาน** — หาวงกลมของจานทุกใบด้วย Hough transform หลายวง แล้วปรับขอบให้แม่นบนภาพความละเอียดเต็ม
+   จานที่ถูกขอบภาพตัดครึ่ง หรือจานที่ซ้อน/ทับกัน (เช่น กองจานที่มุมภาพ) จะ**ไม่ถูกนับ**
+2. **ประเมินทีละจาน** — ใช้เกณฑ์และคะแนนเดียวกับโหมดปกติ (PASS / FAIL, เกรด) ตั้งเลขจานตามตำแหน่ง: บนลงล่าง ซ้ายไปขวา (`#1`, `#2`, …)
+3. **จัดอันดับ** — PASS มาก่อน FAIL → คะแนนสูงกว่า → ปนเปื้อนน้อยกว่า ได้ทั้งอันดับในภาพ (`rank`) และอันดับรวมทุกภาพ (`overall_rank`)
+
+ผลลัพธ์: `<ภาพ>_overview.png` (ภาพต้นฉบับวงกลมแต่ละจานพร้อมเลขจาน อันดับ ผล), `<ภาพ>_p<N>.json` และ `_report.png` ต่อจาน,
+`summary.csv / summary.json / summary.md` เรียงตามอันดับรวม — ใช้กับ GitHub Actions ได้เช่นกัน
+(ในโค้ด: `precision_qc.batch.analyze_plates(...)` และ `precision_qc.api.analyze_plates_to_json(...)`)
+
+> ข้อจำกัด: ควรถ่ายจากด้านบน จานทั้งใบอยู่ในภาพ และจานมีขนาดใกล้เคียงกัน (จานที่ขนาดต่างจากค่ากลางเกิน ~30% จะถูกตัดทิ้ง)
+> การหาวงกลมไม่แม่นเท่าโหมดจานเดียวเล็กน้อย ตรวจดู `_overview.png` ทุกครั้งว่าวงกลมตรงกับจาน ยังไม่มีในหน้าเว็บ (CLI / Actions / API เท่านั้น)
+
 ### 3) Codespaces
 กด **Code → Codespaces → Create codespace** — ระบบติดตั้ง dependency และเปิดเว็บที่พอร์ต 8000 ให้
 
@@ -167,6 +186,7 @@ precision_qc/        Python engine
   analyzer.py        ตรวจจับจาน, จำแนกพิกเซล, คำนวณ metric, ตัดสิน PASS/FAIL
   render.py          สร้างภาพ 6 panel และรายงาน PNG
   api.py             JSON bridge ที่เว็บ (Pyodide) เรียกใช้
+  batch.py           แยกจานหลายใบในภาพเดียว + จัดอันดับ  (--multi)
   cli.py             คำสั่ง batch  (python -m precision_qc)
 web/                 หน้าเว็บ (เวอร์ชัน Pure.css) — โหลด Pyodide แล้วเรียก precision_qc.api
   i18n.js            ข้อความ 3 ภาษา (ไทย / English / 中文)
