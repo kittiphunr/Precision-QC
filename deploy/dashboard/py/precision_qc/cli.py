@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import List
 
 from .analyzer import QCConfig, analyze
+from .batch import analyze_plates, overview_image, rank_key
 from .render import report_image
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
@@ -60,6 +61,46 @@ def markdown_table(rows) -> str:
     return "\n".join(lines)
 
 
+def run_multi(files, cfg, out: Path, no_images: bool):
+    """Each photo holds several dishes: split, analyse each, rank within the photo and overall."""
+    rows = []
+    for f in files:
+        res = analyze_plates(f, cfg, name=f.name)
+        if not no_images:
+            overview_image(res).save(out / f"{f.stem}_overview.png")
+        print(f"{f.name}: {res.summary['plates']} plate(s)  PASS {res.summary['pass']} / FAIL {res.summary['fail']}")
+        for p in res.ranked:
+            rep = p.analysis.report
+            rep["photo"] = f.name
+            rep["name"] = f"{f.stem}#{p.index}"
+            rows.append(rep)
+            stem = f"{f.stem}_p{p.index}"
+            (out / f"{stem}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8")
+            if not no_images:
+                report_image(p.analysis).save(out / f"{stem}_report.png")
+            reason = ", ".join(x["code"] for x in rep["reasons"]) or "Acceptable"
+            print(f"  rank {p.rank}  plate #{p.index}  {rep['result']:4s}  {rep['score']:5.1f}  {rep['grade']}  ({reason})")
+    for i, rep in enumerate(sorted(rows, key=rank_key), start=1):
+        rep["overall_rank"] = i
+    return rows
+
+
+def multi_table(rows) -> str:
+    lines = [
+        "| Overall | Photo | Plate | Rank in photo | Result | Score | Grade | Growth % | Whiteness % | Fluffiness % | Shape % | Contam % | Reason |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for r in sorted(rows, key=lambda r: r["overall_rank"]):
+        icon = "✅ PASS" if r["passed"] else "❌ FAIL"
+        reason = ", ".join(x["code"] for x in r["reasons"]) or "Acceptable"
+        m, c = r["metrics"], r["contamination"]
+        lines.append(f"| {r['overall_rank']} | {r['photo']} | #{r['plate']} | {r['rank']}/{r['plates_in_photo']} | {icon} | {r['score']} | "
+                     f"{r['grade']} | {m['growth']} | {m['whiteness']} | {m['fluffiness']} | {m['shape']} | {c['contamination']} | {reason} |")
+    n_pass = sum(r["passed"] for r in rows)
+    lines += ["", f"**PASS {n_pass} / {len(rows)}**  ·  FAIL {len(rows) - n_pass}"]
+    return "\n".join(lines)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="precision_qc", description="Fungal colony QC from petri-dish photos")
     ap.add_argument("inputs", nargs="+", help="image files or folders")
@@ -67,6 +108,8 @@ def main(argv=None) -> int:
     ap.add_argument("-c", "--config", help="JSON file with QCConfig overrides")
     ap.add_argument("--set", action="append", metavar="KEY=VALUE", help="override one setting, e.g. --set min_score=70")
     ap.add_argument("--no-images", action="store_true", help="skip report PNGs (faster)")
+    ap.add_argument("--multi", action="store_true",
+                    help="each photo contains several dishes: split them, analyse each one and rank them")
     ap.add_argument("--strict", action="store_true", help="exit with code 1 if any image FAILs")
     args = ap.parse_args(argv)
 
@@ -77,6 +120,27 @@ def main(argv=None) -> int:
     cfg = build_config(args)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+
+    if args.multi:
+        rows = run_multi(files, cfg, out, args.no_images)
+        with open(out / "summary.csv", "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(["overall_rank", "photo", "plate", "rank_in_photo", "plates_in_photo", "result", "score", "grade",
+                        "growth", "whiteness", "fluffiness", "shape", "iou", "agar", "contamination", "reasons"])
+            for r in sorted(rows, key=lambda r: r["overall_rank"]):
+                m, c = r["metrics"], r["contamination"]
+                w.writerow([r["overall_rank"], r["photo"], r["plate"], r["rank"], r["plates_in_photo"], r["result"], r["score"],
+                            r["grade"], m["growth"], m["whiteness"], m["fluffiness"], m["shape"], m["iou"], c["agar"],
+                            c["contamination"], "; ".join(x["code"] for x in r["reasons"])])
+        (out / "summary.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+        md = "## 🍄 Precision QC results (batch plates)\n\n" + multi_table(rows) + "\n"
+        (out / "summary.md").write_text(md, encoding="utf-8")
+        if os.environ.get("GITHUB_STEP_SUMMARY"):
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+                fh.write(md)
+        n_fail = sum(not r["passed"] for r in rows)
+        print(f"\n{len(rows) - n_fail} PASS / {n_fail} FAIL of {len(rows)} plates  ->  {out}/")
+        return 1 if (args.strict and n_fail) else 0
 
     rows = []
     for f in files:
