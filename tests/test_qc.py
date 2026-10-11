@@ -163,3 +163,42 @@ def test_cli_multi(tmp_path):
     rows = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert [r["overall_rank"] for r in rows] == [1, 2]
     assert "Overall" in (out / "summary.md").read_text(encoding="utf-8")
+
+
+def test_api_plates_json_for_web():
+    """The web UI calls analyze_plates_to_json: one JSON with summary, overview and ranked plates + panels."""
+    from precision_qc.api import analyze_plates_to_json
+
+    tile = 420
+    photo = np.full((tile, tile * 2 + 30, 3), (25, 25, 30), np.uint8)
+    photo[:, 15:15 + tile] = plate(size=tile)
+    photo[:, 15 + tile:15 + 2 * tile] = plate(size=tile, patches=[(210, 210, 80, (190, 40, 40))])
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.fromarray(photo).save(buf, "PNG")
+    out = json.loads(analyze_plates_to_json(buf.getvalue(), json.dumps({"min_score": 55}), "two.png"))
+    assert out["summary"]["plates"] == 2 and out["overview"].startswith("data:image")
+    assert [p["rank"] for p in out["plates"]] == [1, 2]  # ranked order
+    assert all(p["panels"] and p["plate"] in (1, 2) and p["source"] == "two.png" for p in out["plates"])
+    assert out["plates"][0]["config"]["min_score"] == 55
+
+
+def test_batch_runs_with_32bit_indices(monkeypatch):
+    """Pyodide (wasm32) rejects int64 index arrays in np.bincount; the multi-dish code must use intp."""
+    real = np.bincount
+
+    def strict(x, *a, **k):
+        if np.asarray(x).dtype != np.intp:
+            raise TypeError("Cannot cast array data to intp")
+        return real(x, *a, **k)
+
+    monkeypatch.setattr(np, "bincount", strict)
+    monkeypatch.setattr(np, "intp", np.int32)
+    from precision_qc.batch import analyze_plates
+
+    tile = 300
+    photo = np.full((tile, tile * 2 + 30, 3), (25, 25, 30), np.uint8)
+    photo[:, 15:15 + tile] = plate(size=tile)
+    photo[:, 15 + tile:15 + 2 * tile] = plate(size=tile, seed=3)
+    assert len(analyze_plates(photo).plates) == 2
