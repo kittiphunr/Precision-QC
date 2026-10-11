@@ -182,6 +182,7 @@ def test_api_plates_json_for_web():
     assert [p["rank"] for p in out["plates"]] == [1, 2]  # ranked order
     assert all(p["panels"] and p["plate"] in (1, 2) and p["source"] == "two.png" for p in out["plates"])
     assert out["plates"][0]["config"]["min_score"] == 55
+    assert all(p["strips"]["top"].startswith("data:image") and p["strips"]["bottom"].startswith("data:image") for p in out["plates"])
     w, h = out["photo_size"]
     assert all(0 < p["circle"]["cx"] < w and 0 < p["circle"]["cy"] < h and p["circle"]["r"] > 20 for p in out["plates"])
 
@@ -204,3 +205,15 @@ def test_batch_runs_with_32bit_indices(monkeypatch):
     photo[:, 15:15 + tile] = plate(size=tile)
     photo[:, 15 + tile:15 + 2 * tile] = plate(size=tile, seed=3)
     assert len(analyze_plates(photo).plates) == 2
+
+
+def test_label_strips_unroll_rim_writing():
+    """Dark writing near the rim shows up (dark, upright) in the matching strip and not in the other."""
+    from precision_qc.batch import label_strips
+
+    img = plate(size=420)
+    img[60:75, 170:250] = (20, 20, 20)  # a pen stroke just inside the top rim
+    st = label_strips(img, 210, 210, 210 * 0.8)  # the dish rim of plate() is at 0.84 * 210
+    assert st["top"].width > 200 and st["top"].height > 80
+    top, bottom = np.asarray(st["top"]), np.asarray(st["bottom"])
+    assert (top < 80).sum() > 200 and (bottom < 80).sum() < 20

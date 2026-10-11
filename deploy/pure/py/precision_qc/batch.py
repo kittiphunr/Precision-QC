@@ -255,6 +255,46 @@ def summarize(plates: List[Plate], name: str = "photo") -> Dict[str, Any]:
     return out
 
 
+def label_strips(photo: np.ndarray, cx: float, cy: float, r: float, half_deg: float = 72.0, scale: float = 2.0) -> Dict[str, Image.Image]:
+    """Straightened, pen-ink-enhanced views of the dish rim, where the ID is usually written.
+
+    The ring between 0.52 R and R is unrolled around the top and the bottom of the dish
+    (+-``half_deg``), so curved handwriting becomes a straight line and text written upright
+    reads left-to-right in both strips. Colour is dropped and dark strokes are boosted so
+    faint pen marks are easy to read. Returns ``{"top": img, "bottom": img}``.
+    """
+    pad = int(r * 1.05) + 2
+    x0, y0 = int(cx) - pad, int(cy) - pad
+    gray = np.full((2 * pad, 2 * pad), 255.0, dtype=np.float32)
+    sx0, sy0 = max(0, x0), max(0, y0)
+    sx1, sy1 = min(photo.shape[1], x0 + 2 * pad), min(photo.shape[0], y0 + 2 * pad)
+    g = photo[sy0:sy1, sx0:sx1].astype(np.float32) @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
+    gray[sy0 - y0 : sy1 - y0, sx0 - x0 : sx1 - x0] = g
+    bg = box_blur(gray, int(r / 3) | 1)
+    ink = 255.0 - np.clip((bg - gray) * 4.0, 0.0, 255.0)  # white paper, dark strokes
+    ccx, ccy = cx - x0, cy - y0
+
+    def unroll(center_deg: float, outer_on_top: bool) -> Image.Image:
+        r0, r1 = 0.52 * r, 1.0 * r
+        span = math.radians(2 * half_deg)
+        w, h = int(span * 0.8 * r * scale), int((r1 - r0) * scale)
+        u = np.linspace(0.0, 1.0, w)
+        v = np.linspace(0.0, 1.0, h)
+        # top: columns run clockwise (left->right); bottom: counter-clockwise, so text stays upright
+        theta = math.radians(center_deg) + (u - 0.5) * span * (1.0 if outer_on_top else -1.0)
+        rad = (r1 - v * (r1 - r0)) if outer_on_top else (r0 + v * (r1 - r0))
+        xs = ccx + rad[:, None] * np.cos(theta)[None, :]
+        ys = ccy + rad[:, None] * np.sin(theta)[None, :]
+        xi = np.clip(np.floor(xs).astype(np.intp), 0, ink.shape[1] - 2)
+        yi = np.clip(np.floor(ys).astype(np.intp), 0, ink.shape[0] - 2)
+        fx, fy = np.clip(xs - xi, 0, 1), np.clip(ys - yi, 0, 1)
+        out = (ink[yi, xi] * (1 - fx) * (1 - fy) + ink[yi, xi + 1] * fx * (1 - fy)
+               + ink[yi + 1, xi] * (1 - fx) * fy + ink[yi + 1, xi + 1] * fx * fy)
+        return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+
+    return {"top": unroll(-90.0, True), "bottom": unroll(90.0, False)}
+
+
 def overview_image(result: BatchResult) -> Image.Image:
     """Photo with every dish circled and labelled with its plate number, rank and result."""
     from PIL import ImageDraw
