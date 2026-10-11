@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from PIL import Image
 
 from .analyzer import QCConfig, analyze
-from .batch import analyze_plates
+from .batch import analyze_plates, label_strips
 from .render import PANEL_TITLES, render_panels, to_data_url
 
 
@@ -42,6 +42,7 @@ def analyze_plates_bytes(data: Any, config: Optional[Dict[str, Any]] = None, nam
     plates = []
     for p in res.ranked:
         rep = dict(p.analysis.report)
+        rep["strips"] = {k: to_data_url(im) for k, im in label_strips(res.photo, *p.center, p.radius).items()}
         rep["circle"] = {"cx": round(p.center[0], 1), "cy": round(p.center[1], 1), "r": round(p.radius, 1)}  # photo pixels
         rep["panels"] = [{"key": k, "title": PANEL_TITLES[k], "src": to_data_url(im)} for k, im in render_panels(p.analysis).items()]
         plates.append(rep)
