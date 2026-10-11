@@ -1,10 +1,11 @@
 {
-  "build": "aed9b28db7cf",
+  "build": "d7b2039a9c75",
   "py_files": [
     "__init__.py",
     "__main__.py",
     "analyzer.py",
     "api.py",
+    "batch.py",
     "cli.py",
     "render.py"
   ],
