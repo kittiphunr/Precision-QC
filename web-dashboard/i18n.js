@@ -326,6 +326,12 @@ window.I18N = {
     "np.range": "ช่วง {min} – {max}",
     "caps.f.multi_view": "ค้นหาดอกที่หลุดซ้ำหลายมุมสี",
     "caps.f.multi_view.h": "มองซ้ำด้วยช่อง B / ค่า RGB ต่ำสุด / ยกเงา เพื่อจับดอกเล็กในช่องว่างและดอกในเงา",
+    "page.qc": "ตรวจจานเพาะเชื้อ",
+    "page.caps": "นับจำนวนดอกเห็ด",
+    "brand.subCaps": "นับจำนวนดอกเห็ดจากภาพช่อดอก",
+    "caps.pageTitle": "Precision QC — นับจำนวนดอกเห็ด",
+    "nav.caps": "นับดอกเห็ด",
+    "nav.dishes": "ตรวจจาน",
   },
 
   en: {
@@ -652,6 +658,12 @@ window.I18N = {
     "np.range": "Range {min} – {max}",
     "caps.f.multi_view": "Second look in other colour views",
     "caps.f.multi_view.h": "Re-scan with the blue channel, min-RGB and lifted shadows to catch small caps in gaps and caps in shade",
+    "page.qc": "Culture dish QC",
+    "page.caps": "Mushroom cap counter",
+    "brand.subCaps": "Count mushroom caps from a bunch photo",
+    "caps.pageTitle": "Precision QC — Mushroom cap counter",
+    "nav.caps": "Cap counter",
+    "nav.dishes": "Dish QC",
   },
 
   zh: {
@@ -978,5 +990,11 @@ window.I18N = {
     "np.range": "范围 {min} – {max}",
     "caps.f.multi_view": "多色彩视图二次搜索",
     "caps.f.multi_view.h": "用蓝色通道、RGB 最小值和提亮阴影重新扫描，找出缝隙中的小菇盖和阴影中的菇盖",
+    "page.qc": "培养皿检测",
+    "page.caps": "菇盖计数",
+    "brand.subCaps": "根据菇束照片统计菇盖数量",
+    "caps.pageTitle": "Precision QC — 菇盖计数",
+    "nav.caps": "菇盖计数",
+    "nav.dishes": "培养皿检测",
   },
 };
