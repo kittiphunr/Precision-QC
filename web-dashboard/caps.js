@@ -6,6 +6,8 @@
 const CAPS_CSS = `
 #sec-caps .caps-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 #sec-caps .caps-bar .muted{margin:0}
+#sec-caps .cam-open.pure-button{width:auto}
+#sec-caps .cam-panel{margin:0 0 12px}
 #sec-caps .opt{height:auto;margin-top:10px}
 #sec-caps .caps-info-grid{padding:14px 16px 16px}
 #sec-caps .caps-info-grid label{display:flex;flex-direction:column;gap:6px;font-size:.9em;font-weight:600;margin:0}
@@ -77,9 +79,26 @@ function initCapsUI() {
         <input id="caps-file" type="file" accept="image/*" multiple hidden disabled />
         <span data-i18n="caps.pick"></span>
       </label>
+      <button type="button" id="cam-toggle" class="pure-button cam-open" disabled>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 7h3l2-2h8l2 2h3v12H3V7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span data-i18n="cam.open"></span>
+      </button>
       <span class="muted" data-i18n="samples.label"></span>
       <div id="caps-samples" class="chips"></div>
       <button type="button" id="caps-pdf-all" class="pure-button" disabled data-i18n="btn.pdfAll"></button>
+    </div>
+    <div id="cam-panel" class="cam-panel" hidden>
+      <video id="cam-video" class="cam-video" autoplay playsinline muted></video>
+      <p class="cam-hint" data-i18n="caps.camHint"></p>
+      <div class="cam-actions">
+        <select id="cam-select" class="cam-select" aria-label="Select camera" hidden></select>
+        <button type="button" id="cam-shot" class="pure-button pure-button-primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.3" fill="currentColor"/></svg>
+          <span data-i18n="cam.capture"></span>
+        </button>
+        <button type="button" id="cam-close" class="pure-button" data-i18n="cam.close"></button>
+      </div>
+      <canvas id="cam-canvas" hidden></canvas>
     </div>
     <details class="opt">
       <summary><span class="opt-title" data-i18n="info.title"></span><span class="opt-hint" data-i18n="info.hint"></span></summary>
@@ -440,11 +459,13 @@ langHooks.push(() => {
 initCapsUI();
 initNumpad();
 applyLang(lang);
+initCamera((file) => runCaps([file]));
 boot({
   manifest: (m) => renderCapsSamples(m.caps_samples || []),
   ready: (py) => {
     capsDefaults = JSON.parse(py.default_caps_config_json());
     loadForm($("#caps-cfg"), CAPS_KEY, capsDefaults);
     $("#caps-file").disabled = false;
+    $("#cam-toggle").disabled = false;
   },
 });
