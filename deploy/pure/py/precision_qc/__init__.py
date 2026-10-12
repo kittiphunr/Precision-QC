@@ -9,6 +9,6 @@ from .analyzer import QCConfig, analyze
 
 __all__ = ["QCConfig", "analyze"]
 __version__ = "1.0.0"
-__author__ = "Kittiphun Rattanakorn (กิตติพันธ์ รัตนคร)"
-CREDIT = "Developed by Mr. Kittiphun Rattanakorn, Computer Technical Officer, Mahachulalongkornrajavidyalaya University, Phrae Campus"
+__author__ = "Kittiphun Ruttanakorn (กิตติพันธ์ รัตนคร)"
+CREDIT = "Developed by Mr. Kittiphun Ruttanakorn, Computer Technical Officer, Mahachulalongkornrajavidyalaya University, Phrae Campus"
 CREDIT_TH = "พัฒนาโดย นายกิตติพันธ์ รัตนคร นักวิชาการคอมพิวเตอร์ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่"
