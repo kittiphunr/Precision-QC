@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Precision QC — นับจำนวนดอกเห็ด</title>
+  <meta name="description" content="นับจำนวนดอกเห็ดในช่อจากภาพถ่าย แบ่งขนาดเล็ก/กลาง/ใหญ่ พร้อม % พื้นที่ · Mushroom cap counter · 菇盖计数" />
+  <meta name="author" content="นายกิตติพันธ์ รัตนคร (Mr. Kittiphun Ruttanakorn), Mahachulalongkornrajavidyalaya University, Phrae Campus" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    // apply the saved theme before first paint (no flash of the wrong theme)
+    try { var th = localStorage.getItem("precision-qc-theme"); if (th === "light" || th === "dark") document.documentElement.setAttribute("data-theme", th); } catch (e) {}
+  </script>
+  <script src="protect.js?v=51e0da7f29a0"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/3.0.0/pure-min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/3.0.0/grids-responsive-min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="style.css?v=2c786d039160" />
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="caps.title">นับจำนวนดอกเห็ด (ช่อดอก)</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="34" height="34"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="16" r="8" fill="currentColor" opacity=".85"/><circle cx="16" cy="16" r="3" fill="var(--navy)"/></svg>
+        </span>
+        <div>
+          <h1>Precision QC</h1>
+          <p data-i18n="brand.subCaps">นับจำนวนดอกเห็ดจากภาพช่อดอก</p>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="control">
+          <div class="pure-button-group seg page-nav" role="group" aria-label="Pages">
+            <a href="index.html" class="pure-button" data-i18n="page.qc">ตรวจจานเพาะเชื้อ</a>
+            <a href="caps.html" class="pure-button is-active" aria-current="page" data-i18n="page.caps">นับจำนวนดอกเห็ด</a>
+          </div>
+        </div>
+        <div class="control">
+          <span class="control-label" data-i18n="lang.label">ภาษา</span>
+          <div class="pure-button-group seg lang-switch" role="group">
+            <button type="button" class="pure-button" data-lang="th" lang="th">ไทย</button>
+            <button type="button" class="pure-button" data-lang="en" lang="en">EN</button>
+            <button type="button" class="pure-button" data-lang="zh" lang="zh">中文</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="control-label" data-i18n="theme.label">ธีม</span>
+          <div class="pure-button-group seg theme-switch" role="group">
+            <button type="button" class="pure-button" data-theme-choice="light">
+              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <span data-i18n="theme.light">สว่าง</span>
+            </button>
+            <button type="button" class="pure-button" data-theme-choice="dark">
+              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              <span data-i18n="theme.dark">มืด</span>
+            </button>
+            <button type="button" class="pure-button" data-theme-choice="auto">
+              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor"/></svg>
+              <span data-i18n="theme.auto">อัตโนมัติ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="statusbar">
+      <div class="wrap">
+        <div id="engine" class="engine loading" role="status">
+          <span class="dot"></span><span id="engine-text">กำลังเตรียมระบบ…</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <div id="caps-root"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="privacy" data-i18n="footer.privacy">ภาพถูกประมวลผลบนเครื่องของคุณเท่านั้น ไม่มีการอัปโหลดไปที่ใด</p>
+      <p class="credit" id="credit" lang="th">พัฒนาโดย <b>นายกิตติพันธ์ รัตนคร</b> นักวิชาการคอมพิวเตอร์<br />มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่</p>
+    </div>
+  </footer>
+
+
+  <script src="i18n.js?v=723c3e408033"></script>
+  <script src="common.js?v=1a4ab53bf0f2"></script>
+  <script src="caps.js?v=90672d8085c3"></script>
+</body>
+</html>

@@ -40,8 +40,11 @@ CAPS_DIR = Path("samples") / "ช่อดอก"  # bunches of mushrooms for th
 CAPS_GUIDE = {"ogH13y9c.jpg", "sVrmKJ-V.jpg"}  # already-annotated reference pictures, not inputs
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
-EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
-                  "web-dashboard": ("tw-dash.css", "i18n.js", "app.js", "ui-dash.js")}
+# index.html = dish QC page, caps.html = mushroom cap counter page (each edition ships both)
+EDITION_ASSETS = {"web": ("style.css", "i18n.js", "common.js", "app.js"),
+                  "web-dashboard": ("tw-dash.css", "i18n.js", "common.js", "app.js", "ui-dash.js")}
+CAPS_PAGE_ASSETS = {"web": ("style.css", "i18n.js", "common.js", "caps.js"),
+                    "web-dashboard": ("tw-dash.css", "i18n.js", "common.js", "caps.js", "ui-dash.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
 # pinned so the built output is identical locally and in CI (the drift check in
@@ -106,39 +109,44 @@ def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_s
         for name in batch_samples:
             shutil.copy2(ROOT / BATCH_DIR / name, out / "samples" / "batch" / name)
 
-    index = out / "index.html"
-    html = index.read_text(encoding="utf-8")
+    pages = {"index.html": list(EDITION_ASSETS[src]), "caps.html": list(CAPS_PAGE_ASSETS[src])}
+    htmls = {name: (out / name).read_text(encoding="utf-8") for name in pages}
 
     # --- domain-lock / anti-copy layer -------------------------------------
     # Added only when --lock-domain is given (the deploy/ build for the real
     # host). Plain _site / dev builds are left unprotected so they run anywhere.
-    assets = list(EDITION_ASSETS[src])
+    all_assets = list(dict.fromkeys(a for names in pages.values() for a in names))
     minified = 0
     js_assets = []
     if lock_domains:
         allowed = sorted(set(lock_domains + LOCAL_HOSTS))
         tmpl = (ROOT / "hosting" / "protect.js").read_text(encoding="utf-8")
         (out / "protect.js").write_text(tmpl.replace("__ALLOWED_HOSTS__", json.dumps(allowed)), encoding="utf-8")
-        if "<!--protect-->" not in html:
-            raise SystemExit(f"{src}/index.html is missing the <!--protect--> placeholder")
-        html = html.replace("<!--protect-->", '<script src="protect.js"></script>', 1)
-        assets.append("protect.js")
-        js_assets = [a for a in assets if a.endswith(".js")]
+        for name in pages:
+            if "<!--protect-->" not in htmls[name]:
+                raise SystemExit(f"{src}/{name} is missing the <!--protect--> placeholder")
+            htmls[name] = htmls[name].replace("<!--protect-->", '<script src="protect.js"></script>', 1)
+            pages[name].append("protect.js")
+        all_assets.append("protect.js")
+        js_assets = [a for a in all_assets if a.endswith(".js")]
         for name in js_assets:
             if _minify_js(out / name):
                 minified += 1
     else:
-        html = html.replace("<!--protect-->\n  ", "").replace("<!--protect-->", "")
+        for name in pages:
+            htmls[name] = htmls[name].replace("<!--protect-->\n  ", "").replace("<!--protect-->", "")
 
-    # cache-busting: index.html links each asset as file?v=<content hash>,
+    # cache-busting: each page links its assets as file?v=<content hash>,
     # hashed AFTER minify so the URL reflects exactly what is shipped
-    for name in assets:
-        tag = hashlib.sha256((out / name).read_bytes()).hexdigest()[:12]
-        ref = f'"{name}"'
-        if ref not in html:
-            raise SystemExit(f"{src}/index.html no longer references {name}")
-        html = html.replace(ref, f'"{name}?v={tag}"')
-    index.write_text(html, encoding="utf-8")
+    tags = {a: hashlib.sha256((out / a).read_bytes()).hexdigest()[:12] for a in all_assets}
+    for name, names in pages.items():
+        html = htmls[name]
+        for asset in names:
+            ref = f'"{asset}"'
+            if ref not in html:
+                raise SystemExit(f"{src}/{name} no longer references {asset}")
+            html = html.replace(ref, f'"{asset}?v={tags[asset]}"')
+        (out / name).write_text(html, encoding="utf-8")
 
     if caps_samples:  # bunches for the cap counter (samples/ช่อดอก/ -> samples/caps/)
         (out / "samples" / "caps").mkdir()

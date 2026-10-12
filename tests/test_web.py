@@ -21,14 +21,28 @@ def test_all_languages_have_the_same_keys():
 
 
 def test_edition_copies_of_shared_files_are_in_sync():
-    for name in ("app.js", "i18n.js"):
+    for name in ("app.js", "common.js", "caps.js", "i18n.js"):
         assert (ROOT / "web-dashboard" / name).read_bytes() == (ROOT / "web" / name).read_bytes(), name
 
 
-def test_dashboard_page_uses_only_defined_translation_keys():
-    html = (ROOT / "web-dashboard" / "index.html").read_text(encoding="utf-8")
-    used = set(re.findall(r'data-i18n(?:-aria|-ph)?="([^"]+)"', html))
-    assert used and used <= keys_by_lang()["th"], sorted(used - keys_by_lang()["th"])
+def test_pages_use_only_defined_translation_keys():
+    for edition in ("web", "web-dashboard"):
+        for page in ("index.html", "caps.html"):
+            html = (ROOT / edition / page).read_text(encoding="utf-8")
+            used = set(re.findall(r'data-i18n(?:-aria|-ph|-title)?="([^"]+)"', html))
+            assert used and used <= keys_by_lang()["th"], (edition, page, sorted(used - keys_by_lang()["th"]))
+
+
+def test_each_edition_has_two_pages_that_link_to_each_other_and_load_the_right_scripts():
+    for edition in ("web", "web-dashboard"):
+        idx = (ROOT / edition / "index.html").read_text(encoding="utf-8")
+        caps = (ROOT / edition / "caps.html").read_text(encoding="utf-8")
+        assert 'href="caps.html"' in idx and 'href="index.html"' in caps
+        order = lambda html, files: [html.index(f'<script src="{f}"') for f in files]
+        assert order(idx, ["i18n.js", "common.js", "app.js"]) == sorted(order(idx, ["i18n.js", "common.js", "app.js"]))
+        assert order(caps, ["i18n.js", "common.js", "caps.js"]) == sorted(order(caps, ["i18n.js", "common.js", "caps.js"]))
+        assert 'id="caps-root"' in caps and "<!--protect-->" in caps and "<!--protect-->" in idx
+        assert "app.js" not in caps and "caps.js" not in idx
 
 
 def test_dashboard_credits_are_translated_and_listed_in_notices():
@@ -49,3 +63,22 @@ def test_dashboard_credits_are_translated_and_listed_in_notices():
 def test_dashboard_assets_exist():
     for f in ("img/mcu-logo.png", "img/developer.jpg", "ui-dash.js"):
         assert (ROOT / "web-dashboard" / f).is_file(), f
+
+
+def test_numpad_is_wired_and_translated():
+    js = (ROOT / "web" / "common.js").read_text(encoding="utf-8")
+    assert "function initNumpad()" in js
+    for page in ("app.js", "caps.js"):
+        assert "initNumpad();" in (ROOT / "web" / page).read_text(encoding="utf-8"), page
+    used = set(re.findall(r'\bt\("(np\.[a-z]+)"', js))
+    assert used == {"np.ok", "np.cancel", "np.range"}
+    assert used <= keys_by_lang()["th"]
+
+
+def test_caps_settings_labels_have_hints():
+    js = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
+    keys = keys_by_lang()["th"]
+    fields = re.findall(r'data-i18n="(caps\.f\.[a-z_]+)"', js)
+    assert len(fields) >= 6
+    for k in fields:
+        assert k in keys and f"{k}.h" in keys, k
