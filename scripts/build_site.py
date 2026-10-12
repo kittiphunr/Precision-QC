@@ -36,6 +36,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BATCH_DIR = Path("samples") / "แบบชุด"  # photos with several dishes each
+CAPS_DIR = Path("samples") / "ช่อดอก"  # bunches of mushrooms for the cap counter
+CAPS_GUIDE = {"ogH13y9c.jpg", "sVrmKJ-V.jpg"}  # already-annotated reference pictures, not inputs
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
 EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
@@ -79,7 +81,7 @@ def _build_tailwind(src_dir: Path, out_css: Path) -> None:
         raise SystemExit(f"Tailwind build failed:\n{res.stderr.strip()}")
 
 
-def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_samples=()) -> None:
+def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_samples=(), caps_samples=()) -> None:
     """Copy one web edition into `out` (engine, samples, cache-busting, the
     optional protection layer). `out` must already exist and be empty."""
     src_dir = ROOT / src
@@ -138,8 +140,13 @@ def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_s
         html = html.replace(ref, f'"{name}?v={tag}"')
     index.write_text(html, encoding="utf-8")
 
+    if caps_samples:  # bunches for the cap counter (samples/ช่อดอก/ -> samples/caps/)
+        (out / "samples" / "caps").mkdir()
+        for name in caps_samples:
+            shutil.copy2(ROOT / CAPS_DIR / name, out / "samples" / "caps" / name)
     (out / "manifest.json").write_text(json.dumps({"build": build_id, "py_files": py_files, "samples": samples,
-                                                  "batch_samples": list(batch_samples)}, indent=2))
+                                                  "batch_samples": list(batch_samples),
+                                                  "caps_samples": list(caps_samples)}, indent=2))
     (out / ".nojekyll").write_text("")
     # server settings for Apache / LiteSpeed hosts (GitHub Pages ignores them)
     shutil.copy2(ROOT / "hosting" / ".htaccess", out / ".htaccess")
@@ -167,10 +174,12 @@ def build(out: Path, lock_domains=None) -> Path:
 
     batch_samples = sorted(p.name for p in (ROOT / BATCH_DIR).glob("*") if p.suffix.lower() in IMAGE_EXT) if (ROOT / BATCH_DIR).is_dir() else []
 
+    caps_samples = sorted(p.name for p in (ROOT / CAPS_DIR).glob("*") if p.suffix.lower() in IMAGE_EXT and p.name not in CAPS_GUIDE) if (ROOT / CAPS_DIR).is_dir() else []
+
     print(f"Built (engine {build_id}, {len(py_files)} python files, {len(samples)} samples):")
     # each edition goes in its own self-contained folder — upload any one whole
-    _assemble("web", out / "pure", build_id, samples, lock_domains, batch_samples)         # Pure.css edition
-    _assemble("web-dashboard", out / "dashboard", build_id, samples, lock_domains, batch_samples)  # Dashboard (+ webcam)
+    _assemble("web", out / "pure", build_id, samples, lock_domains, batch_samples, caps_samples)         # Pure.css edition
+    _assemble("web-dashboard", out / "dashboard", build_id, samples, lock_domains, batch_samples, caps_samples)  # Dashboard (+ webcam)
     _landing(out)  # a chooser at the root so / is not a 404 when all are uploaded
     return out
 
