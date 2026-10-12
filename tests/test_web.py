@@ -125,3 +125,22 @@ def test_readme_images_exist_and_none_is_unused():
     on_disk = {f"docs/img/{p.name}" for p in (ROOT / "docs" / "img").glob("*.jpg")}
     assert used == on_disk, (sorted(used - on_disk), sorted(on_disk - used))
     assert sum(p.stat().st_size for p in (ROOT / "docs" / "img").iterdir()) < 5_000_000  # keeps the repo light
+
+
+def test_camera_code_is_shared_and_the_cap_page_has_the_camera_ui():
+    common = (ROOT / "web" / "common.js").read_text(encoding="utf-8")
+    assert "function initCamera(onCapture)" in common and "onCapture(new File(" in common
+    assert "initCamera((file) => runFiles([file]))" in (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    caps = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
+    assert "initCamera((file) => runCaps([file]))" in caps
+    for ident in ("cam-toggle", "cam-panel", "cam-video", "cam-shot", "cam-close", "cam-canvas", "cam-select"):
+        assert f'id="{ident}"' in caps, ident
+    assert "function initCamera" not in (ROOT / "web" / "app.js").read_text(encoding="utf-8")  # no second copy
+
+
+def test_every_translation_key_in_the_injected_cap_page_markup_exists():
+    caps = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
+    used = set(re.findall(r'data-i18n(?:-ph|-aria|-title)?="([^"]+)"', caps))
+    assert {"cam.open", "cam.capture", "cam.close", "caps.camHint"} <= used
+    for lang, ks in keys_by_lang().items():
+        assert not sorted(used - ks), (lang, sorted(used - ks))

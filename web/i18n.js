@@ -382,6 +382,7 @@ window.I18N = {
     "r.cap.annexPrefix": "ก",
     "r.cap.pdfTitleOne": "รายงานผลการนับดอกเห็ด {no}",
     "r.cap.pdfTitleMany": "รายงานผลการนับดอกเห็ด",
+    "caps.camHint": "วางช่อดอกให้เห็นหน้าช่อชัด ๆ จากด้านบน แสงสม่ำเสมอ แล้วกดถ่ายภาพ",
   },
 
   en: {
@@ -764,6 +765,7 @@ window.I18N = {
     "r.cap.annexPrefix": "A",
     "r.cap.pdfTitleOne": "Mushroom cap count report {no}",
     "r.cap.pdfTitleMany": "Mushroom cap count report",
+    "caps.camHint": "Frame the bunch from above with its top in clear view and even light, then capture",
   },
 
   zh: {
@@ -1146,5 +1148,6 @@ window.I18N = {
     "r.cap.annexPrefix": "A",
     "r.cap.pdfTitleOne": "菇盖计数报告 {no}",
     "r.cap.pdfTitleMany": "菇盖计数报告",
+    "caps.camHint": "从正上方拍摄菇束，使顶面清晰可见、光线均匀，然后点击拍照",
   },
 };
