@@ -39,7 +39,7 @@ BATCH_DIR = Path("samples") / "แบบชุด"  # photos with several dishes
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
 EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
-                  "web-dashboard": ("tw-dash.css", "i18n.js", "app.js")}
+                  "web-dashboard": ("tw-dash.css", "i18n.js", "app.js", "ui-dash.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
 # pinned so the built output is identical locally and in CI (the drift check in
@@ -112,6 +112,7 @@ def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_s
     # host). Plain _site / dev builds are left unprotected so they run anywhere.
     assets = list(EDITION_ASSETS[src])
     minified = 0
+    js_assets = []
     if lock_domains:
         allowed = sorted(set(lock_domains + LOCAL_HOSTS))
         tmpl = (ROOT / "hosting" / "protect.js").read_text(encoding="utf-8")
@@ -120,7 +121,8 @@ def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_s
             raise SystemExit(f"{src}/index.html is missing the <!--protect--> placeholder")
         html = html.replace("<!--protect-->", '<script src="protect.js"></script>', 1)
         assets.append("protect.js")
-        for name in ("i18n.js", "app.js", "protect.js"):
+        js_assets = [a for a in assets if a.endswith(".js")]
+        for name in js_assets:
             if _minify_js(out / name):
                 minified += 1
     else:
@@ -143,7 +145,7 @@ def _assemble(src: str, out: Path, build_id: str, samples, lock_domains, batch_s
     shutil.copy2(ROOT / "hosting" / ".htaccess", out / ".htaccess")
 
     if lock_domains:
-        tail = f"domain lock: {', '.join(lock_domains)}; {minified}/3 js minified" if minified \
+        tail = f"domain lock: {', '.join(lock_domains)}; {minified}/{len(js_assets)} js minified" if minified \
             else f"domain lock: {', '.join(lock_domains)}; js NOT minified (terser unavailable)"
     else:
         tail = "no protection (dev build)"
