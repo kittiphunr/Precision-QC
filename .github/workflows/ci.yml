@@ -25,9 +25,12 @@ jobs:
         run: python -m precision_qc samples -o reports
       - name: Analyse multi-dish photos
         run: python -m precision_qc "samples/แบบชุด" --multi -o reports-multi
+      - name: Count mushroom caps
+        run: find "samples/ช่อดอก" -name '*.jpg' ! -name ogH13y9c.jpg ! -name sVrmKJ-V.jpg -print0 | xargs -0 python -m precision_qc --caps -o reports-caps
       - uses: actions/upload-artifact@v4
         with:
           name: sample-reports
           path: |
             reports/
             reports-multi/
+            reports-caps/

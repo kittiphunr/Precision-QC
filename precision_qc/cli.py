@@ -17,6 +17,7 @@ from typing import List
 
 from .analyzer import QCConfig, analyze
 from .batch import analyze_plates, overview_image, rank_key
+from .caps import CapConfig, count_caps, overlay_image
 from .render import report_image
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
@@ -101,6 +102,41 @@ def multi_table(rows) -> str:
     return "\n".join(lines)
 
 
+def run_caps(files, args, out: Path) -> int:
+    """Each photo is one bunch of mushrooms: count the caps by size."""
+    data = {}
+    for item in args.set or []:
+        key, _, value = item.partition("=")
+        data[key.strip()] = value.strip()
+    cfg = CapConfig.from_dict(data)
+    rows = []
+    for f in files:
+        res = count_caps(f, cfg, name=f.name)
+        rep = res.report
+        rows.append(rep)
+        (out / f"{f.stem}_caps.json").write_text(json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8")
+        if not args.no_images:
+            overlay_image(res).save(out / f"{f.stem}_caps.png")
+        c = rep["counts"]
+        print(f"{rep['total']:5d} caps  small {c['small']}  medium {c['medium']}  large {c['large']}  {f.name}")
+    with open(out / "caps_summary.csv", "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["image", "total", "small", "medium", "large", "small_pct", "medium_pct", "large_pct", "median_diameter_px"])
+        for r in rows:
+            c, p = r["counts"], r["percent"]
+            w.writerow([r["name"], r["total"], c["small"], c["medium"], c["large"], p["small"], p["medium"], p["large"],
+                        r["median_diameter_px"]])
+    lines = ["## 🍄 Precision QC — mushroom cap count", "", "| Image | Total | Small | Medium | Large |", "|---|---|---|---|---|"]
+    lines += [f"| {r['name']} | {r['total']} | {r['counts']['small']} | {r['counts']['medium']} | {r['counts']['large']} |" for r in rows]
+    md = "\n".join(lines) + "\n"
+    (out / "caps_summary.md").write_text(md, encoding="utf-8")
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+            fh.write(md)
+    print(f"\n{sum(r['total'] for r in rows)} caps in {len(rows)} photo(s)  ->  {out}/")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="precision_qc", description="Fungal colony QC from petri-dish photos")
     ap.add_argument("inputs", nargs="+", help="image files or folders")
@@ -110,6 +146,8 @@ def main(argv=None) -> int:
     ap.add_argument("--no-images", action="store_true", help="skip report PNGs (faster)")
     ap.add_argument("--multi", action="store_true",
                     help="each photo contains several dishes: split them, analyse each one and rank them")
+    ap.add_argument("--caps", action="store_true",
+                    help="count the mushroom caps of a bunch (ช่อดอก): small / medium / large (use --set contrast=3 etc.)")
     ap.add_argument("--strict", action="store_true", help="exit with code 1 if any image FAILs")
     args = ap.parse_args(argv)
 
@@ -117,9 +155,11 @@ def main(argv=None) -> int:
     if not files:
         print("No images found - nothing to do.", file=sys.stderr)
         return 0
-    cfg = build_config(args)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    if args.caps:
+        return run_caps(files, args, out)
+    cfg = build_config(args)
 
     if args.multi:
         rows = run_multi(files, cfg, out, args.no_images)
