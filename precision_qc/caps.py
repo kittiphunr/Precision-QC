@@ -72,6 +72,7 @@ class CapResult:
     caps: List[Tuple[float, float, float, str]] = field(default_factory=list)  # x, y, r, class
     report: Dict[str, Any] = field(default_factory=dict)
     fragments: np.ndarray = field(repr=False, default=None)  # bool mask: visible parts of hidden caps
+    stages: Dict[str, Any] = field(repr=False, default_factory=dict)  # intermediate results, drawn by step_images()
 
 
 # --------------------------------------------------------------------------- #
@@ -201,15 +202,20 @@ def count_caps(src: Any, config: Optional[CapConfig] = None, name: str = "bunch"
         caps.append((x, y, r, cls))
     H, W = rgb.shape[:2]
     yy, xx = np.mgrid[0:H, 0:W]
+    first_pass = list(caps)
     covered = _discs(caps, yy, xx, grow=1.05)
+    more = []
     if cfg.multi_view and caps:
-        caps += _more_caps(f, footprint, covered, caps, med, cfg, yy, xx)
+        more = _more_caps(f, footprint, covered, caps, med, cfg, yy, xx)
+        caps += more
         covered = _discs(caps, yy, xx, grow=1.05)
     hidden, frag = [], np.zeros((H, W), dtype=bool)
     if cfg.find_hidden and caps:
         hidden, frag = _find_hidden(f, bunch, covered, med, cfg, yy, xx, caps)
         caps += hidden
     caps = _prune(caps)
+    stages = {"footprint": footprint, "region": region, "body": body, "dist": dist, "first": first_pass,
+              "more": more, "hidden": hidden, "median_r": med}
     counts = {k: sum(1 for c in caps if c[3] == k) for k in CLASSES}
     total = len(caps)
     bunch_px = int(bunch.sum())
@@ -236,7 +242,7 @@ def count_caps(src: Any, config: Optional[CapConfig] = None, name: str = "bunch"
         "image_size": [W, H],
         "config": cfg.to_dict(),
     }
-    return CapResult(name=name, photo=rgb, bunch=region, caps=caps, report=report, fragments=frag)
+    return CapResult(name=name, photo=rgb, bunch=region, caps=caps, report=report, fragments=frag, stages=stages)
 
 
 def _discs(caps, yy, xx, grow: float = 1.0) -> np.ndarray:
@@ -473,3 +479,141 @@ def overlay_image(res: CapResult, width: int = 0) -> Image.Image:
         x, y, r = x * scale, y * scale, r * scale
         d.ellipse([x - r, y - r, x + r, y + r], outline=CLASS_COLORS[cls], width=lw)
     return im
+
+
+# --------------------------------------------------------------------------- #
+# "how it was counted" — one cropped picture per step
+# --------------------------------------------------------------------------- #
+STEP_KEYS = ("photo", "bunch", "gray", "channels", "contrast", "distance", "first", "views", "shadow", "final", "area")
+
+
+def _heat(t: np.ndarray) -> np.ndarray:
+    """0..1 -> dark blue / cyan / yellow / red colour ramp (uint8 RGB)."""
+    stops = np.array([[10, 12, 60], [20, 90, 200], [30, 200, 190], [250, 230, 60], [240, 60, 30]], dtype=np.float32)
+    t = np.clip(t, 0, 1) * (len(stops) - 1)
+    i = np.minimum(t.astype(int), len(stops) - 2)
+    fr = (t - i)[..., None]
+    return (stops[i] * (1 - fr) + stops[i + 1] * fr).astype(np.uint8)
+
+
+def _edge(mask: np.ndarray) -> np.ndarray:
+    p = np.pad(mask, 1, constant_values=False)
+    return mask & ~(p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:])
+
+
+def _ring(im: Image.Image, caps, color=None, scale: float = 1.0, ox: int = 0, oy: int = 0, width: int = 2) -> None:
+    d = ImageDraw.Draw(im)
+    for x, y, r, cls in caps:
+        x, y, r = (x - ox) * scale, (y - oy) * scale, r * scale
+        d.ellipse([x - r, y - r, x + r, y + r], outline=color or CLASS_COLORS[cls], width=width)
+
+
+def step_images(res: CapResult, width: int = 520) -> List[Tuple[str, Image.Image]]:
+    """The counting technique, step by step: ``[(key, image)]`` in the order of STEP_KEYS.
+
+    Every picture is cropped to the bunch (same crop, same size) so the steps
+    can be compared side by side. Empty list when no bunch was found.
+    """
+    st = res.stages
+    if not st or res.photo is None or not st["footprint"].any():
+        return []
+    photo = res.photo
+    H, W = photo.shape[:2]
+    ys, xs = np.nonzero(st["footprint"])
+    m = 10
+    y0, y1, x0, x1 = max(0, ys.min() - m), min(H, ys.max() + m + 1), max(0, xs.min() - m), min(W, xs.max() + m + 1)
+    sc = min(1.0, width / float(x1 - x0))
+    out_w, out_h = max(2, round((x1 - x0) * sc)), max(2, round((y1 - y0) * sc))
+    foot = st["footprint"]
+
+    def crop(a: np.ndarray) -> np.ndarray:
+        return a[y0:y1, x0:x1]
+
+    def to_img(a: np.ndarray) -> Image.Image:
+        im = Image.fromarray(np.ascontiguousarray(a).astype(np.uint8))
+        return im if im.size == (out_w, out_h) else im.resize((out_w, out_h), Image.LANCZOS)
+
+    def dim(a: np.ndarray, k: float = 0.3) -> np.ndarray:
+        return (a.astype(np.float32) * k).astype(np.uint8)
+
+    f = photo.astype(np.float32)
+    lum = 0.299 * f[..., 0] + 0.587 * f[..., 1] + 0.114 * f[..., 2]
+    steps: List[Tuple[str, Image.Image]] = []
+
+    # 1 the photo (cropped to the bunch)
+    steps.append(("photo", to_img(crop(photo))))
+
+    # 2 where the bunch is: footprint outlined, the rest dimmed
+    b = np.where(foot[..., None], photo, dim(photo, 0.35))
+    b[_edge(foot)] = (255, 214, 0)
+    b[_edge(st["region"])] = (0, 230, 160)
+    steps.append(("bunch", to_img(crop(b))))
+
+    # 3 black & white + invert: caps become dark blobs on a light background
+    inv = np.where(foot, 255.0 - lum, 235.0)
+    steps.append(("gray", to_img(crop(np.stack([inv] * 3, -1)))))
+
+    # 4 every colour band: R, G, B and the darkest of the three
+    tiles = [f[..., 0], f[..., 1], f[..., 2], f.min(-1)]
+    tw, th = out_w // 2, out_h // 2
+    sheet = Image.new("RGB", (out_w, out_h), (20, 20, 24))
+    dr = ImageDraw.Draw(sheet)
+    for i, (ch, lab) in enumerate(zip(tiles, ("R", "G", "B", "min(R,G,B)"))):
+        g = np.clip(np.where(foot, ch, 0), 0, 255)
+        im = Image.fromarray(crop(np.stack([g] * 3, -1)).astype(np.uint8)).resize((tw, th), Image.LANCZOS)
+        sheet.paste(im, ((i % 2) * tw, (i // 2) * th))
+        dr.rectangle([(i % 2) * tw + 4, (i // 2) * th + 4, (i % 2) * tw + 12 + 7 * len(lab), (i // 2) * th + 20], fill=(0, 0, 0))
+        dr.text(((i % 2) * tw + 8, (i // 2) * th + 6), lab, fill=(255, 255, 255))
+    steps.append(("channels", sheet))
+
+    # 5 caps = brighter than their surroundings (dark gaps between caps split them)
+    body = st["body"]
+    c = np.where(body[..., None], np.array([245, 245, 245], np.uint8), np.array([14, 16, 22], np.uint8))
+    c = np.where(foot[..., None], c, dim(photo, 0.12))
+    steps.append(("contrast", to_img(crop(c))))
+
+    # 6 distance transform: the deeper inside a blob, the hotter; one peak per cap
+    dist = st["dist"]
+    heat = _heat(dist / max(1.0, float(np.percentile(dist[dist > 0], 99)) if (dist > 0).any() else 1.0))
+    heat = np.where(body[..., None], heat, dim(photo, 0.15))
+    im6 = to_img(crop(heat))
+    d6 = ImageDraw.Draw(im6)
+    for x, y, r, _ in st["first"]:
+        px, py = (x - x0) * sc, (y - y0) * sc
+        d6.ellipse([px - 2, py - 2, px + 2, py + 2], fill=(255, 255, 255))
+    steps.append(("distance", im6))
+
+    # 7 first pass: a circle per cap, coloured by size
+    im7 = to_img(crop(dim(photo, 0.55)))
+    _ring(im7, st["first"], scale=sc, ox=x0, oy=y0)
+    steps.append(("first", im7))
+
+    # 8 second look in other colour views: only the caps this found are bright
+    im8 = to_img(crop(dim(photo, 0.5)))
+    _ring(im8, st["first"], color=(150, 150, 150), scale=sc, ox=x0, oy=y0, width=1)
+    _ring(im8, st["more"], color=(255, 0, 255), scale=sc, ox=x0, oy=y0, width=2)
+    steps.append(("views", im8))
+
+    # 9 shadows lifted: what is left (pale, not inside a full cap) are crescents of caps hidden underneath
+    lifted = 255.0 * (lum / 255.0) ** 0.55
+    lift = np.stack([lifted] * 3, -1)
+    lift[res.fragments] = 0.45 * lift[res.fragments] + 0.55 * np.array(CLASS_COLORS["hidden"])
+    im9 = to_img(crop(np.where(foot[..., None], lift, dim(lift, 0.3)).astype(np.uint8)))
+    _ring(im9, st["hidden"], scale=sc, ox=x0, oy=y0)
+    steps.append(("shadow", im9))
+
+    # 10 the result
+    im10 = to_img(crop(photo))
+    _ring(im10, res.caps, scale=sc, ox=x0, oy=y0)
+    steps.append(("final", im10))
+
+    # 11 area share: every pixel coloured by the kind of cap covering it, stems / gaps grey
+    yy, xx = np.mgrid[0:H, 0:W]
+    canvas = dim(photo, 0.0)
+    canvas[...] = (70, 70, 78)
+    for cls in ("large", "medium", "small", "hidden"):  # smaller / hidden drawn last = on top
+        mk = _discs([c for c in res.caps if c[3] == cls], yy, xx)
+        canvas[mk] = CLASS_COLORS[cls]
+    canvas = np.where(st["region"][..., None], canvas, dim(photo, 0.25))
+    steps.append(("area", to_img(crop(canvas))))
+    return steps

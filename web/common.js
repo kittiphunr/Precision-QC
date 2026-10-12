@@ -168,6 +168,97 @@ function download(name, blob) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
+/* ---------------------------------------------------------------- PDF engine
+ * Shared by both pages. A page builds the HTML of its A4 report pages
+ * (".rpage" blocks, styled in the edition CSS); makePdf() renders each with
+ * html2canvas and assembles them into one PDF with jsPDF (both loaded on demand). */
+const PDF_LIBS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+];
+
+const libPromises = {};
+function loadScript(src) {
+  libPromises[src] ??= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => { delete libPromises[src]; s.remove(); reject(new Error(`cannot load ${src}`)); };
+    document.head.appendChild(s);
+  });
+  return libPromises[src];
+}
+
+// ISO 8601 calendar dates (YYYY-MM-DD) in local time
+const isoDate = (d) => {
+  if (!d) return "—";
+  if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const x = new Date(d), p = (n) => String(n).padStart(2, "0");
+  return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}`;
+};
+const dash = (v) => (v ? esc(v) : "—");
+
+// Content must end above the footer; if it does not, use the denser layout.
+function fitPage(page) {
+  const limit = page.querySelector(".r-foot").offsetTop - 8;
+  const bottom = () => Math.max(...[...page.children].filter((el) => !el.classList.contains("r-foot"))
+    .map((el) => el.offsetTop + el.offsetHeight));
+  if (bottom() > limit) page.classList.add("compact");
+}
+
+async function waitForImages(root) {
+  await Promise.all([...root.querySelectorAll("img")].map((img) =>
+    img.complete ? Promise.resolve() : new Promise((res) => { img.onload = img.onerror = res; })));
+}
+
+function newReportNo(date, prefix = "PQC") {
+  const d = isoDate(date).replace(/-/g, "");
+  const rnd = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, "0");
+  return `${prefix}-${d}-${rnd}`;
+}
+
+// pages(i) -> HTML of report i; props -> {title, subject}; fileName -> output name
+async function makePdf({ n, pages, props, fileName }) {
+  const lng = lang;
+  const overlay = $("#busy");
+  overlay.hidden = false;
+  $("#busy-text").textContent = t("busy.pdf");
+  const host = document.createElement("div");
+  host.className = "report-host";
+  document.body.appendChild(host);
+  try {
+    for (const src of PDF_LIBS) await loadScript(src);
+    if (document.fonts?.ready) await document.fonts.ready;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+    let first = true;
+    for (let i = 0; i < n; i++) {
+      $("#busy-text").textContent = t("busy.pdfN", { i: i + 1, n });
+      host.innerHTML = pages(i);
+      await waitForImages(host);
+      for (const page of host.querySelectorAll(".rpage")) {
+        fitPage(page);
+        const canvas = await html2canvas(page, { scale: 2, backgroundColor: "#ffffff", logging: false, scrollX: 0, scrollY: 0 });
+        if (!first) pdf.addPage("a4", "portrait");
+        first = false;
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      }
+    }
+    pdf.setProperties({
+      ...props,
+      creator: `Precision QC v${APP_VERSION}`,
+      author: `${t("credit.name", {}, lng)}, ${t("credit.line2", {}, lng)}`,
+    });
+    download(fileName, pdf.output("blob"));
+  } catch (err) {
+    console.error(err);
+    alert(t("alert.pdfFail"));
+  } finally {
+    host.remove();
+    overlay.hidden = true;
+  }
+}
+
 /* ------------------------------------------------------------------ numpad
  * On-screen number pad for every <input type="number"> (gloved hands / tablets
  * in the lab). Tapping a field opens it; keys edit the field live, and the
