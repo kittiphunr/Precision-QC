@@ -162,10 +162,27 @@ body {
 .statusbar .wrap { padding-top: 6px; padding-bottom: 6px; }
 .engine { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #dfe7f2; }
 .engine .dot { width: 8px; height: 8px; border-radius: 50%; background: #fab219; flex: none; }
-.engine.loading .dot { animation: pulse 1s infinite alternate; }
-.engine.ready .dot { background: #4cd964; }
+.engine.loading .dot { animation: qc-warm .9s steps(1, end) infinite, qc-blink .45s ease-in-out infinite alternate; }
+.engine.ready .dot { background: #4cd964; animation: qc-ready 1.6s linear 1 forwards; }
 .engine.error .dot { background: #ff6b6b; }
 @keyframes pulse { to { opacity: .3; } }
+/* status light: red/yellow blink while loading; on ready a red -> yellow -> red -> yellow
+   flash settles on a solid green with a soft glow ring */
+@keyframes qc-warm { 0% { background-color: #ff6b6b; } 50% { background-color: #fab219; } }
+@keyframes qc-blink { from { opacity: 1; } to { opacity: .35; } }
+@keyframes qc-ready {
+  0%   { background-color: #ff6b6b; box-shadow: 0 0 0 0 rgba(255,107,107,.6); }
+  18%  { background-color: #ff6b6b; box-shadow: 0 0 0 5px rgba(255,107,107,0); }
+  20%  { background-color: #fab219; box-shadow: 0 0 0 0 rgba(250,178,25,.6); }
+  38%  { background-color: #fab219; box-shadow: 0 0 0 5px rgba(250,178,25,0); }
+  40%  { background-color: #ff6b6b; box-shadow: 0 0 0 0 rgba(255,107,107,.6); }
+  58%  { background-color: #ff6b6b; box-shadow: 0 0 0 5px rgba(255,107,107,0); }
+  60%  { background-color: #fab219; box-shadow: 0 0 0 0 rgba(250,178,25,.6); }
+  78%  { background-color: #fab219; box-shadow: 0 0 0 5px rgba(250,178,25,0); }
+  80%  { background-color: #4cd964; box-shadow: 0 0 0 0 rgba(76,217,100,.7); }
+  100% { background-color: #4cd964; box-shadow: 0 0 0 7px rgba(76,217,100,0); }
+}
+@media (prefers-reduced-motion: reduce) { .engine .dot { animation: none !important; } }
 
 /* ------------------------------------------------------------ layout */
 main.wrap { padding-top: 24px; padding-bottom: 40px; display: grid; gap: 22px; }
