@@ -1,6 +1,7 @@
-/* Precision QC — Dashboard edition UI: display-settings panel (text size), the
- * About / credits dialog and its technology + licence list.
- * Interface guideline: Certify Hub (sticky header, settings panel, About dialog).
+/* Precision QC — Dashboard edition UI: the side menu (icon rail that expands on
+ * hover, drawer on phones), display-settings panel (text size), and the
+ * About / credits dialog with its technology + licence list.
+ * Interface guideline: Certify Hub admin (side menu, settings panel, About dialog).
  * Language and theme switching stay in app.js; this file only adds what the
  * Dashboard header needs and re-applies translated attributes after a language
  * change. Loaded after app.js (it uses the global t() from there). */
@@ -45,10 +46,63 @@
     document.addEventListener("click", closePanel);
   }
 
+  /* ------------------------------------------------------------ side menu */
+  const root = document.documentElement, sb = $("#sidebar");
+  const MIN_KEY = "precision-qc-sbmin";
+  const sbToggle = $("#sbToggle"), fab = $("#sbFab"), backdrop = $("#sbBackdrop");
+  function syncSb() {
+    if (!sbToggle) return;
+    const min = root.classList.contains("sb-min");
+    sbToggle.setAttribute("aria-expanded", String(!min));
+    const label = t(min ? "ui.expand" : "ui.collapse");
+    $("#sbToggleText").textContent = label;
+    sbToggle.title = label;
+  }
+  function drawer(on) {
+    sb.classList.toggle("open", on);
+    backdrop.hidden = !on;
+    fab.setAttribute("aria-expanded", String(on));
+  }
+  if (sb) {
+    sbToggle.addEventListener("click", () => {
+      root.classList.toggle("sb-min");
+      try { localStorage.setItem(MIN_KEY, root.classList.contains("sb-min") ? "1" : "0"); } catch (_) { /* ignore */ }
+      syncSb();
+    });
+    fab.addEventListener("click", () => drawer(!sb.classList.contains("open")));
+    backdrop.addEventListener("click", () => drawer(false));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") drawer(false); });
+  }
+
+  // highlight the section being read (scroll-spy) and close the drawer after a jump
+  const links = $$("[data-spy]");
+  function setActive(id) {
+    links.forEach((a) => {
+      const on = a.dataset.spy === id;
+      a.classList.toggle("active", on);
+      if (on) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
+    });
+  }
+  let ticking = false, lockUntil = 0;
+  function spy() {
+    ticking = false;
+    if (Date.now() < lockUntil) return; // a menu click chose the section; don't override while it scrolls
+    let current = links[0]?.dataset.spy;
+    for (const a of links) {
+      const el = document.getElementById(a.dataset.spy);
+      if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.3) current = a.dataset.spy;
+    }
+    setActive(current);
+  }
+  window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(spy); } }, { passive: true });
+  links.forEach((a) => a.addEventListener("click", () => { setActive(a.dataset.spy); lockUntil = Date.now() + 1200; drawer(false); }));
+  spy();
+
   /* --------------------------------------------------------- About dialog */
   const about = $("#aboutModal");
   function openAbout() {
     closePanel();
+    if (sb) drawer(false);
     about.hidden = false;
     document.body.classList.add("modal-open");
     $("#aboutClose").focus();
@@ -101,6 +155,8 @@
   let build = "";
   function refresh() {
     $$("[data-i18n-aria]").forEach((el) => el.setAttribute("aria-label", t(el.dataset.i18nAria)));
+    $$("[data-i18n-title]").forEach((el) => (el.title = t(el.dataset.i18nTitle)));
+    syncSb();
     const b = $("#aboutBuild");
     if (b) b.textContent = build ? `Precision QC · ${t("about.build")} ${build}` : "";
   }
