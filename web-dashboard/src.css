@@ -98,7 +98,7 @@
   .sb-fab { display: none; }
   .sb-backdrop { @apply fixed inset-0 z-30 bg-slate-950/45; }
   .scroll-anchor { @apply scroll-mt-4; }
-  .results-wrap { @apply grid gap-4 min-w-0; }
+  .results-wrap { @apply grid grid-cols-1 gap-4 min-w-0; } /* grid-cols-1 = minmax(0,1fr): a wide table must scroll inside its card, not widen the page */
   html { @apply motion-safe:scroll-smooth; }
 
   @media (max-width: 900px) {
@@ -117,7 +117,7 @@
   }
 
   /* page */
-  .container { @apply max-w-6xl mx-auto w-full px-4 py-5 grid gap-4 min-w-0; }
+  .container { @apply max-w-6xl mx-auto w-full px-4 py-5 grid grid-cols-1 gap-4 min-w-0; }
   .container > *, #results > * { @apply min-w-0; }
 
   /* 3-step strip (Certify Hub stepper) */
