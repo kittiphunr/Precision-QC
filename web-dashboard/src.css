@@ -53,7 +53,7 @@
   /* sidebar — Certify Hub admin style: floating icon rail (hover to expand), drawer on phones */
   .icon-btn { @apply w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 grid place-items-center shrink-0 cursor-pointer no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-300; }
   .settings-wrap { @apply relative; }
-  .panel-pop { @apply fixed z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl; left: 262px; bottom: 76px; }
+  .panel-pop { @apply fixed z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl; left: 276px; bottom: 76px; }
   .panel-title { @apply m-0 font-bold; }
   .panel-label { @apply mt-3.5 mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
   .seg { @apply flex bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-0.5 gap-0.5; }
@@ -67,13 +67,13 @@
   .engine.error .dot { @apply bg-rose-500; }
 
 
-  :root { --sbw: 246px; }
-  html.sb-min { --sbw: 86px; }
+  :root { --sbw: 260px; }
+  html.sb-min { --sbw: 96px; }
   .app { @apply min-h-screen; }
   .app-main { @apply min-w-0 flex flex-col; margin-left: var(--sbw); transition: margin-left .18s ease; }
-  .sb { @apply fixed left-0 top-0 bottom-0 z-40 flex flex-col gap-3 pl-3.5 py-3.5 overflow-x-hidden overflow-y-auto; width: var(--sbw); transition: width .18s ease, transform .2s ease; scrollbar-width: none; overscroll-behavior: contain; }
+  .sb { @apply fixed left-0 top-0 bottom-0 z-40 flex flex-col gap-3 px-3.5 py-4 overflow-x-hidden overflow-y-auto; width: var(--sbw); transition: width .18s ease, transform .2s ease; scrollbar-width: none; overscroll-behavior: contain; }
   .sb::-webkit-scrollbar { display: none; }
-  html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 246px; @apply bg-slate-100 dark:bg-slate-950 shadow-2xl; }
+  html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 260px; @apply bg-slate-100 dark:bg-slate-950 shadow-2xl rounded-r-3xl; }
   .sb .t { @apply whitespace-nowrap; }
   .sb-brand { @apply flex items-center gap-3 h-12 no-underline text-slate-900 dark:text-slate-100 whitespace-nowrap; }
   .badge-logo { @apply w-11 h-11 rounded-full bg-indigo-600 text-white grid place-items-center shrink-0 shadow-lg shadow-indigo-500/30; }
@@ -92,7 +92,7 @@
   html.sb-min .sb-collapse .ic { transform: rotate(180deg); }
   /* collapsed rail: icon-only round buttons */
   html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-center; }
-  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 64px; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 64px; margin-inline: auto; }
   html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-11 h-11 p-0 gap-0 rounded-full justify-center mx-auto; }
   html.sb-min .sb:not(:hover):not(:focus-within) .t { @apply hidden; }
   .sb-fab { display: none; }
