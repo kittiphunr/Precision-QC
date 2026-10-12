@@ -6,6 +6,7 @@ import pytest
 
 from precision_qc import QCConfig, analyze
 from precision_qc.api import analyze_to_json
+from precision_qc.caps import CapConfig
 from precision_qc.cli import main as cli_main
 from precision_qc.render import report_image
 
@@ -217,3 +218,103 @@ def test_label_strips_unroll_rim_writing():
     assert st["top"].width > 200 and st["top"].height > 80
     top, bottom = np.asarray(st["top"]), np.asarray(st["bottom"])
     assert (top < 80).sum() > 200 and (bottom < 80).sum() < 20
+
+
+# --------------------------------------------------------------------------- #
+# mushroom cap counter (ช่อดอก)
+# --------------------------------------------------------------------------- #
+CAPS_DIR = SAMPLES / "ช่อดอก"
+
+
+def bunch_photo(n_big=20, n_small=60, seed=1, size=(520, 400)):
+    """Synthetic bunch: cream discs (shaded like spheres) on a blue sleeve; returns (image, n_discs)."""
+    rng = np.random.default_rng(seed)
+    h, w = size
+    img = np.empty((h, w, 3), np.float32)
+    img[:] = (30, 70, 190)  # blue sleeve
+    yy, xx = np.mgrid[0:h, 0:w]
+    cx, cy, rad = w / 2, h / 2, min(h, w) * 0.42
+    placed = []
+    for r, count in ((19, n_big), (10, n_small)):
+        tries = 0
+        while sum(1 for p in placed if p[2] == r) < count and tries < 4000:
+            tries += 1
+            a, d = rng.uniform(0, 2 * np.pi), rad * np.sqrt(rng.uniform(0, 1)) * 0.85
+            x, y = cx + d * np.cos(a), cy + d * np.sin(a)
+            if all(np.hypot(x - px, y - py) > r + pr + 2 for px, py, pr in placed):
+                placed.append((x, y, r))
+    for x, y, r in placed:
+        dd = np.hypot(xx - x, yy - y)
+        m = dd <= r
+        shade = 1.0 - 0.18 * (dd[m] / r) ** 2
+        img[m] = np.array([238, 230, 210]) * shade[:, None]
+    return np.clip(img, 0, 255).astype(np.uint8), len(placed)
+
+
+def test_caps_counts_synthetic_bunch_by_size():
+    from precision_qc.caps import count_caps
+
+    img, n = bunch_photo()
+    res = count_caps(img)
+    assert abs(res.report["total"] - n) <= 0.15 * n
+    c = res.report["counts"]
+    assert sum(c.values()) == res.report["total"]
+    assert 0 < c["large"] < res.report["total"]  # the big discs are told apart from the small ones
+
+
+def test_caps_ignores_blue_sleeve_only_photo():
+    from precision_qc.caps import count_caps
+
+    blue = np.full((300, 300, 3), (30, 70, 190), np.uint8)
+    assert count_caps(blue).report["total"] == 0
+
+
+@pytest.mark.skipif(not CAPS_DIR.is_dir(), reason="no bunch samples")
+def test_caps_sample_photos_give_plausible_counts():
+    from precision_qc.caps import count_caps
+
+    for name in ("8MV9U7gX.jpg", "AElY1DQU.jpg", "zfxmWT86.jpg"):
+        rep = count_caps(CAPS_DIR / name).report
+        assert 250 <= rep["total"] <= 800, (name, rep["total"])
+        assert min(rep["counts"].values()) > 20, (name, rep["counts"])
+
+
+def test_caps_api_and_cli(tmp_path):
+    from precision_qc.api import count_caps_to_json, default_caps_config_json
+    from PIL import Image
+
+    img, _ = bunch_photo()
+    f = tmp_path / "bunch.png"
+    Image.fromarray(img).save(f)
+    out = json.loads(count_caps_to_json(f.read_bytes(), json.dumps({"contrast": 3}), "bunch.png"))
+    assert out["total"] == len(out["caps"]) and out["overlay"].startswith("data:image/")
+    assert "contrast" in json.loads(default_caps_config_json())
+    assert cli_main([str(f), "--caps", "-o", str(tmp_path / "out")]) == 0
+    assert (tmp_path / "out" / "caps_summary.csv").is_file() and (tmp_path / "out" / "bunch_caps.png").is_file()
+
+
+def test_caps_recovers_cap_hidden_under_another_and_reports_area_share():
+    from precision_qc.caps import count_caps
+
+    img, _ = bunch_photo(n_big=14, n_small=0, seed=3)
+    h, w = img.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    base = count_caps(img).report
+    # a cream cap tucked under the biggest visible one: only a crescent peeks out
+    probe = count_caps(img)
+    x, y, r, _ = max(probe.caps, key=lambda c: c[2])
+    s = w / probe.photo.shape[1]  # work size -> this image
+    x, y, r = x * s, y * s, r * s
+    for (hx, hy, hr, on_top) in ((x + 0.95 * r, y, 0.8 * r, False),):
+        d = np.hypot(xx - hx, yy - hy)
+        img[d <= hr] = (225, 215, 195)
+        top = np.hypot(xx - x, yy - y) <= r
+        img[top] = (238, 230, 210)
+    rep = count_caps(img).report
+    assert rep["counts"]["hidden"] >= 1
+    assert rep["total"] > base["total"]
+    a = rep["area_percent"]
+    assert 0 < a["visible"] <= 100 and 0 <= a["hidden"] < 20
+    assert abs(a["visible"] + a["hidden"] + a["gaps"] - 100) < 0.5
+    off = count_caps(img, CapConfig(find_hidden=0)).report
+    assert off["counts"]["hidden"] == 0

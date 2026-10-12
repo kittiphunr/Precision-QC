@@ -10,6 +10,7 @@ from PIL import Image
 
 from .analyzer import QCConfig, analyze
 from .batch import analyze_plates, label_strips
+from .caps import CapConfig, count_caps, overlay_image
 from .render import PANEL_TITLES, render_panels, to_data_url
 
 
@@ -53,3 +54,20 @@ def analyze_plates_bytes(data: Any, config: Optional[Dict[str, Any]] = None, nam
 
 def analyze_plates_to_json(data: Any, config_json: str = "{}", name: str = "photo") -> str:
     return json.dumps(analyze_plates_bytes(data, json.loads(config_json or "{}"), name))
+
+
+def count_caps_bytes(data: Any, config: Optional[Dict[str, Any]] = None, name: str = "bunch") -> Dict[str, Any]:
+    """One photo of a bunch -> cap counts by size + the photo with every cap circled."""
+    res = count_caps(_as_bytes(data), CapConfig.from_dict(config), name=name)
+    out = dict(res.report)
+    out["overlay"] = to_data_url(overlay_image(res))
+    out["caps"] = [[round(x, 1), round(y, 1), round(r, 1), c] for x, y, r, c in res.caps]
+    return out
+
+
+def count_caps_to_json(data: Any, config_json: str = "{}", name: str = "bunch") -> str:
+    return json.dumps(count_caps_bytes(data, json.loads(config_json or "{}"), name))
+
+
+def default_caps_config_json() -> str:
+    return json.dumps(CapConfig().to_dict())

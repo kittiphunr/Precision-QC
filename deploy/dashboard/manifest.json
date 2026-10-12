@@ -1,11 +1,12 @@
 {
-  "build": "bf8097713c2f",
+  "build": "9985b7aa9410",
   "py_files": [
     "__init__.py",
     "__main__.py",
     "analyzer.py",
     "api.py",
     "batch.py",
+    "caps.py",
     "cli.py",
     "render.py"
   ],
@@ -23,5 +24,12 @@
     "VU-aGjrC.jpg",
     "Zn2Bsu_m.jpg",
     "bU--ghfq.jpg"
+  ],
+  "caps_samples": [
+    "8MV9U7gX.jpg",
+    "AElY1DQU.jpg",
+    "lYmFjBwy.jpg",
+    "pgJXbHd1.jpg",
+    "zfxmWT86.jpg"
   ]
 }
