@@ -97,7 +97,8 @@ def test_api_json_roundtrip():
 def test_report_image_and_cli(tmp_path):
     an = analyze(SAMPLES / "sporulation.jpg", name="s")
     assert report_image(an).size[0] > 1000
-    code = cli_main([str(SAMPLES), "-o", str(tmp_path), "--strict"])
+    singles = sorted(str(f) for f in SAMPLES.glob("*.jpg"))  # the แบบชุด/ sub-folder holds multi-dish photos
+    code = cli_main(singles + ["-o", str(tmp_path), "--strict"])
     assert code == 1  # two reference samples fail
     assert (tmp_path / "summary.csv").exists()
     assert (tmp_path / "white_colony_report.png").exists()
@@ -118,3 +119,101 @@ def test_index_arrays_are_intp_for_32bit_pyodide(monkeypatch):
     monkeypatch.setattr(np, "intp", np.int32)  # wasm32 pointer size
     rep = analyze(plate()).report
     assert rep["result"] == "PASS"
+
+
+def test_batch_photo_splits_and_ranks(tmp_path):
+    """Three synthetic dishes on one photo (one good, one contaminated, one sparse) are split and ranked."""
+    from precision_qc.batch import analyze_plates
+
+    tile = 420
+    good, bad, weak = plate(size=tile), plate(size=tile, patches=[(210, 210, 80, (190, 40, 40))]), plate(colony_frac=0.3, size=tile)
+    photo = np.full((tile, tile * 3 + 40, 3), (25, 25, 30), np.uint8)
+    for i, im in enumerate((good, bad, weak)):
+        photo[:, 20 + i * tile : 20 + (i + 1) * tile] = im
+    res = analyze_plates(photo, name="synthetic")
+    assert len(res.plates) == 3
+    assert [p.index for p in res.plates] == [1, 2, 3]  # left to right
+    assert sorted(p.rank for p in res.plates) == [1, 2, 3]
+    by_idx = {p.index: p.analysis.report for p in res.plates}
+    assert by_idx[1]["result"] == "PASS" and by_idx[1]["rank"] == 1
+    assert by_idx[2]["result"] == "FAIL" and "Contaminated" in [r["code"] for r in by_idx[2]["reasons"]]
+    assert by_idx[3]["result"] == "FAIL" and by_idx[3]["rank"] in (2, 3)
+    assert res.summary["pass"] == 1 and res.summary["fail"] == 2
+
+
+def test_batch_sample_photos_ignore_partial_dishes():
+    folder = SAMPLES / "แบบชุด"
+    if not folder.is_dir():
+        pytest.skip("batch samples not present")
+    from precision_qc.batch import analyze_plates
+
+    expected = {"0dRKZpPx.jpg": 4, "6RCgPJjP.jpg": 3, "Cw7hhoex.jpg": 3, "RR3Uo8Cu.jpg": 8,
+                "VU-aGjrC.jpg": 3, "Zn2Bsu_m.jpg": 3, "bU--ghfq.jpg": 2}
+    for fname, n in expected.items():
+        res = analyze_plates(folder / fname, name=fname)
+        assert len(res.plates) == n, fname  # stacked / cut-off dishes at the border are not counted
+
+
+def test_cli_multi(tmp_path):
+    folder = SAMPLES / "แบบชุด"
+    if not folder.is_dir():
+        pytest.skip("batch samples not present")
+    out = tmp_path / "out"
+    assert cli_main([str(folder / "bU--ghfq.jpg"), "-o", str(out), "--multi", "--no-images"]) == 0
+    rows = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert [r["overall_rank"] for r in rows] == [1, 2]
+    assert "Overall" in (out / "summary.md").read_text(encoding="utf-8")
+
+
+def test_api_plates_json_for_web():
+    """The web UI calls analyze_plates_to_json: one JSON with summary, overview and ranked plates + panels."""
+    from precision_qc.api import analyze_plates_to_json
+
+    tile = 420
+    photo = np.full((tile, tile * 2 + 30, 3), (25, 25, 30), np.uint8)
+    photo[:, 15:15 + tile] = plate(size=tile)
+    photo[:, 15 + tile:15 + 2 * tile] = plate(size=tile, patches=[(210, 210, 80, (190, 40, 40))])
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.fromarray(photo).save(buf, "PNG")
+    out = json.loads(analyze_plates_to_json(buf.getvalue(), json.dumps({"min_score": 55}), "two.png"))
+    assert out["summary"]["plates"] == 2 and out["photo"].startswith("data:image") and out["photo_size"][0] > 0
+    assert [p["rank"] for p in out["plates"]] == [1, 2]  # ranked order
+    assert all(p["panels"] and p["plate"] in (1, 2) and p["source"] == "two.png" for p in out["plates"])
+    assert out["plates"][0]["config"]["min_score"] == 55
+    assert all(p["strips"]["top"].startswith("data:image") and p["strips"]["bottom"].startswith("data:image") for p in out["plates"])
+    w, h = out["photo_size"]
+    assert all(0 < p["circle"]["cx"] < w and 0 < p["circle"]["cy"] < h and p["circle"]["r"] > 20 for p in out["plates"])
+
+
+def test_batch_runs_with_32bit_indices(monkeypatch):
+    """Pyodide (wasm32) rejects int64 index arrays in np.bincount; the multi-dish code must use intp."""
+    real = np.bincount
+
+    def strict(x, *a, **k):
+        if np.asarray(x).dtype != np.intp:
+            raise TypeError("Cannot cast array data to intp")
+        return real(x, *a, **k)
+
+    monkeypatch.setattr(np, "bincount", strict)
+    monkeypatch.setattr(np, "intp", np.int32)
+    from precision_qc.batch import analyze_plates
+
+    tile = 300
+    photo = np.full((tile, tile * 2 + 30, 3), (25, 25, 30), np.uint8)
+    photo[:, 15:15 + tile] = plate(size=tile)
+    photo[:, 15 + tile:15 + 2 * tile] = plate(size=tile, seed=3)
+    assert len(analyze_plates(photo).plates) == 2
+
+
+def test_label_strips_unroll_rim_writing():
+    """Dark writing near the rim shows up (dark, upright) in the matching strip and not in the other."""
+    from precision_qc.batch import label_strips
+
+    img = plate(size=420)
+    img[60:75, 170:250] = (20, 20, 20)  # a pen stroke just inside the top rim
+    st = label_strips(img, 210, 210, 210 * 0.8)  # the dish rim of plate() is at 0.84 * 210
+    assert st["top"].width > 200 and st["top"].height > 80
+    top, bottom = np.asarray(st["top"]), np.asarray(st["bottom"])
+    assert (top < 80).sum() > 200 and (bottom < 80).sum() < 20
