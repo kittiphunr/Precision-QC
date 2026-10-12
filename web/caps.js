@@ -141,7 +141,7 @@ function initCapsUI() {
         </div>
       </form>
     </details>
-    <details class="opt">
+    <details id="sec-opts" class="opt scroll-anchor">
       <summary><span class="opt-title" data-i18n="caps.cfg"></span><span class="opt-hint" data-i18n="caps.cfgHint"></span></summary>
       <form id="caps-cfg" class="pure-form pure-form-stacked" onsubmit="return false">
         <fieldset class="caps-group">
@@ -188,7 +188,7 @@ function initCapsUI() {
         </div>
       </form>
     </details>
-    <div id="caps-results"></div>`;
+    <div id="sec-results" class="scroll-anchor"><div id="caps-results"></div></div>`;
   $("#caps-root").appendChild(sec);
   // the report info is shared with the dish QC page (same storage key): merge, never drop its other fields
   loadForm($("#caps-info"), INFO_KEY);

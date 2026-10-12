@@ -46,6 +46,11 @@ def test_each_edition_has_two_pages_that_link_to_each_other_and_load_the_right_s
         assert order(caps, ["i18n.js", "common.js", "caps.js"]) == sorted(order(caps, ["i18n.js", "common.js", "caps.js"]))
         assert 'id="caps-root"' in caps and "<!--protect-->" in caps and "<!--protect-->" in idx
         assert "app.js" not in caps and "caps.js" not in idx
+        import re as _re
+        nav = lambda html: _re.findall(r'<nav class="sb-cap sb-nav".*?</nav>', html, _re.S)
+        if nav(idx) and nav(caps):  # Dashboard edition: both functions get the same 5-entry menu
+            n = lambda html: len(_re.findall(r"<a href=", nav(html)[0]))
+            assert n(idx) == n(caps) == 5
 
 
 def test_dashboard_credits_are_translated_and_listed_in_notices():
