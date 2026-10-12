@@ -4,10 +4,8 @@
  * Own page, own results and CSV. Needs i18n.js + common.js. */
 
 const CAPS_CSS = `
-#sec-caps .caps-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
-#sec-caps .caps-bar .muted{margin:0}
-#sec-caps .cam-open.pure-button{width:auto}
-#sec-caps .cam-panel{margin:0 0 12px}
+#sec-caps > p.muted{margin-bottom:14px}
+#sec-caps .samples .caps-pdf-all{margin-left:auto}
 #sec-caps .opt{height:auto;margin-top:10px}
 #sec-caps .caps-info-grid{padding:14px 16px 16px}
 #sec-caps .caps-info-grid label{display:flex;flex-direction:column;gap:6px;font-size:.9em;font-weight:600;margin:0}
@@ -74,31 +72,35 @@ function initCapsUI() {
   sec.innerHTML = `
     <h2 class="section-title" data-i18n="caps.title"></h2>
     <p class="muted" data-i18n="caps.hint"></p>
-    <div class="caps-bar">
-      <label class="pure-button pure-button-primary" id="caps-pick-label">
-        <input id="caps-file" type="file" accept="image/*" multiple hidden disabled />
-        <span data-i18n="caps.pick"></span>
-      </label>
+    <label id="caps-drop" class="drop disabled" for="caps-file">
+      <input id="caps-file" type="file" accept="image/*" multiple hidden disabled />
+      <svg class="drop-icon" viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <strong data-i18n="caps.drop.title"></strong>
+      <span data-i18n="drop.hint"></span>
+    </label>
+    <div class="camera">
       <button type="button" id="cam-toggle" class="pure-button cam-open" disabled>
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 7h3l2-2h8l2 2h3v12H3V7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
         <span data-i18n="cam.open"></span>
       </button>
-      <span class="muted" data-i18n="samples.label"></span>
-      <div id="caps-samples" class="chips"></div>
-      <button type="button" id="caps-pdf-all" class="pure-button" disabled data-i18n="btn.pdfAll"></button>
-    </div>
-    <div id="cam-panel" class="cam-panel" hidden>
-      <video id="cam-video" class="cam-video" autoplay playsinline muted></video>
-      <p class="cam-hint" data-i18n="caps.camHint"></p>
-      <div class="cam-actions">
-        <select id="cam-select" class="cam-select" aria-label="Select camera" hidden></select>
-        <button type="button" id="cam-shot" class="pure-button pure-button-primary">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.3" fill="currentColor"/></svg>
-          <span data-i18n="cam.capture"></span>
-        </button>
-        <button type="button" id="cam-close" class="pure-button" data-i18n="cam.close"></button>
+      <div id="cam-panel" class="cam-panel" hidden>
+        <video id="cam-video" class="cam-video" autoplay playsinline muted></video>
+        <p class="cam-hint" data-i18n="caps.camHint"></p>
+        <div class="cam-actions">
+          <select id="cam-select" class="cam-select" aria-label="Select camera" hidden></select>
+          <button type="button" id="cam-shot" class="pure-button pure-button-primary">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.3" fill="currentColor"/></svg>
+            <span data-i18n="cam.capture"></span>
+          </button>
+          <button type="button" id="cam-close" class="pure-button" data-i18n="cam.close"></button>
+        </div>
+        <canvas id="cam-canvas" hidden></canvas>
       </div>
-      <canvas id="cam-canvas" hidden></canvas>
+    </div>
+    <div class="samples">
+      <span data-i18n="samples.label"></span>
+      <div id="caps-samples" class="chips"></div>
+      <button type="button" id="caps-pdf-all" class="pure-button caps-pdf-all" disabled data-i18n="btn.pdfAll"></button>
     </div>
     <details class="opt">
       <summary><span class="opt-title" data-i18n="info.title"></span><span class="opt-hint" data-i18n="info.hint"></span></summary>
@@ -172,6 +174,10 @@ function initCapsUI() {
     try { localStorage.setItem(INFO_KEY, JSON.stringify({ ...saved, ...readForm($("#caps-info"), false) })); } catch (_) { /* ignore */ }
   });
   $("#caps-pdf-all").addEventListener("click", () => downloadCapsPdf(capsList));
+  const drop = $("#caps-drop");
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => runCaps([...e.dataTransfer.files].filter((f) => f.type.startsWith("image/"))));
   $("#caps-file").addEventListener("change", (e) => runCaps([...e.target.files]).then(() => (e.target.value = "")));
   $("#caps-cfg").addEventListener("input", () => {
     persist($("#caps-cfg"), CAPS_KEY, true);
@@ -466,6 +472,7 @@ boot({
     capsDefaults = JSON.parse(py.default_caps_config_json());
     loadForm($("#caps-cfg"), CAPS_KEY, capsDefaults);
     $("#caps-file").disabled = false;
+    $("#caps-drop").classList.remove("disabled");
     $("#cam-toggle").disabled = false;
   },
 });

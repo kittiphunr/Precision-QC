@@ -144,3 +144,16 @@ def test_every_translation_key_in_the_injected_cap_page_markup_exists():
     assert {"cam.open", "cam.capture", "cam.close", "caps.camHint"} <= used
     for lang, ks in keys_by_lang().items():
         assert not sorted(used - ks), (lang, sorted(used - ks))
+
+
+def test_cap_page_input_area_matches_the_dish_page_style():
+    """Same drop zone / camera button / sample row structure (and CSS classes) as index.html."""
+    caps = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
+    for edition in ("web", "web-dashboard"):
+        idx = (ROOT / edition / "index.html").read_text(encoding="utf-8")
+        for cls in ('class="drop', 'class="drop-icon"', 'class="camera"', 'class="samples"', 'class="chips"'):
+            assert cls in idx and cls in caps, (edition, cls)
+    assert 'id="caps-drop"' in caps and 'type="file" accept="image/*" multiple' in caps
+    for ev in ("dragenter", "dragover", "dragleave", "drop"):
+        assert f'"{ev}"' in caps, ev
+    assert "caps.pick" not in caps
