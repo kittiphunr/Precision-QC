@@ -316,5 +316,17 @@ def test_caps_recovers_cap_hidden_under_another_and_reports_area_share():
     a = rep["area_percent"]
     assert 0 < a["visible"] <= 100 and 0 <= a["hidden"] < 20
     assert abs(a["visible"] + a["hidden"] + a["gaps"] - 100) < 0.5
-    off = count_caps(img, CapConfig(find_hidden=0)).report
+    off = count_caps(img, CapConfig(find_hidden=0, multi_view=0)).report
     assert off["counts"]["hidden"] == 0
+
+
+def test_caps_multi_view_never_loses_caps_and_prune_removes_twins():
+    from precision_qc.caps import _prune, count_caps
+
+    img, _ = bunch_photo(n_big=20, n_small=60, seed=5)
+    on = count_caps(img, CapConfig(multi_view=1)).report
+    off = count_caps(img, CapConfig(multi_view=0)).report
+    assert on["total"] >= off["total"] - 2
+    caps = [(100.0, 100.0, 20.0, "large"), (101.0, 100.0, 19.0, "large"), (110.0, 100.0, 5.0, "small"), (150.0, 100.0, 20.0, "large")]
+    kept = _prune(caps)
+    assert len(kept) == 2 and {round(c[0]) for c in kept} == {100, 150}  # the twin and the cap sitting inside it are gone

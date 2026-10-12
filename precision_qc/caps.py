@@ -9,11 +9,15 @@ Photograph a bunch from above and count the round caps (heads):
 3. a distance transform gives one centre + radius per cap,
 4. each cap is classed small / medium / large relative to the median cap of
    that bunch (green / blue / red in the overlay),
-5. caps lying *under* others are recovered: the fully visible caps are masked
+5. caps the brightness view missed (small ones in the gaps, dim ones in shade)
+   are searched again in several other views — the blue channel, the darkest
+   channel (min of R,G,B: only white caps stay bright) and a lighter-local-mean
+   version — then each new circle must stand out from the ring around it,
+6. caps lying *under* others are recovered: the fully visible caps are masked
    out, shadows are lifted, and what is left of pale (low-saturation) pixels —
    the crescents peeking out — is split into fragments; a circle is fitted to
    each fragment's free outline to estimate the whole hidden cap (orange),
-6. area shares: how much of the bunch area each size class covers.
+7. area shares: how much of the bunch area each size class covers.
 
 Only numpy + Pillow are used, so it also runs under Pyodide.
 """
@@ -41,6 +45,7 @@ class CapConfig:
     min_cap_px: float = 2.0  # smallest cap radius kept (px at work size)
     small_below: float = 0.85  # radius < small_below x median  -> small
     large_above: float = 1.20  # radius > large_above x median  -> large
+    multi_view: int = 1  # 1 = also search other colour views (B, min-RGB, shadows lifted) for caps the first pass missed
     find_hidden: int = 1  # 1 = also recover caps lying under other caps (0 = off)
     hidden_sat: float = 0.16  # max colour saturation of a hidden cap's visible part (stems are more saturated)
     shadow_lift: float = 0.55  # gamma < 1 brightens shadows before looking for hidden caps
@@ -135,8 +140,8 @@ def _distance(mask: np.ndarray, max_iter: int = 60) -> np.ndarray:
     return dist
 
 
-def find_bunch(rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Returns ``(pale, bunch, region)`` boolean masks.
+def find_bunch(rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Returns ``(pale, bunch, region, footprint)`` boolean masks.
 
     ``pale`` = cream / white pixels (not the blue sleeve), ``bunch`` = the
     biggest blob of them that is not cut off by the photo border (a blob that
@@ -161,19 +166,20 @@ def find_bunch(rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if score > best_score:
             best, best_score = i, score
     if not best:
-        return pale, np.zeros_like(pale), np.zeros_like(pale)
+        z = np.zeros_like(pale)
+        return pale, z, z, z
     big = np.kron((lab == best).astype(np.uint8), np.ones((s, s), np.uint8)).astype(bool)
     bunch = np.zeros_like(pale)
     bunch[: big.shape[0], : big.shape[1]] = big
     region = bunch & (gaussian(pale.astype(np.float32), 6.0) > 0.5)
-    return pale, _dilate(bunch, 8) & pale, region
+    return pale, _dilate(bunch, 8) & pale, region, _dilate(bunch, 8)
 
 
 def count_caps(src: Any, config: Optional[CapConfig] = None, name: str = "bunch") -> CapResult:
     """Count the mushroom caps of the bunch in ``src`` (path / bytes / PIL / ndarray)."""
     cfg = config or CapConfig()
     rgb = load_image(src, cfg.work_size)
-    pale, bunch, region = find_bunch(rgb)
+    pale, bunch, region, footprint = find_bunch(rgb)
     f = rgb.astype(np.float32)
     lum = 0.299 * f[..., 0] + 0.587 * f[..., 1] + 0.114 * f[..., 2]
     body = (lum > gaussian(lum, 9.0) - cfg.contrast) & bunch
@@ -196,10 +202,14 @@ def count_caps(src: Any, config: Optional[CapConfig] = None, name: str = "bunch"
     H, W = rgb.shape[:2]
     yy, xx = np.mgrid[0:H, 0:W]
     covered = _discs(caps, yy, xx, grow=1.05)
+    if cfg.multi_view and caps:
+        caps += _more_caps(f, footprint, covered, caps, med, cfg, yy, xx)
+        covered = _discs(caps, yy, xx, grow=1.05)
     hidden, frag = [], np.zeros((H, W), dtype=bool)
     if cfg.find_hidden and caps:
         hidden, frag = _find_hidden(f, bunch, covered, med, cfg, yy, xx, caps)
         caps += hidden
+    caps = _prune(caps)
     counts = {k: sum(1 for c in caps if c[3] == k) for k in CLASSES}
     total = len(caps)
     bunch_px = int(bunch.sum())
@@ -252,6 +262,129 @@ def _fit_circle(pts: np.ndarray) -> Optional[Tuple[float, float, float]]:
         return None
     r2 = c + cx * cx + cy * cy
     return (float(cx), float(cy), math.sqrt(r2)) if r2 > 1 else None
+
+
+def _lens_area(d: np.ndarray, r1: float, r2: np.ndarray) -> np.ndarray:
+    """Overlap area of circle(r1) with circles(r2) whose centres are ``d`` away."""
+    d = np.asarray(d, dtype=np.float64)
+    r2 = np.asarray(r2, dtype=np.float64)
+    small = np.minimum(r1, r2)
+    out = np.where(d >= r1 + r2, 0.0, np.pi * small * small)  # disjoint / one inside the other
+    mid = (d < r1 + r2) & (d > np.abs(r1 - r2))
+    dm = np.where(mid, d, 1.0)
+    a1 = np.clip((dm * dm + r1 * r1 - r2 * r2) / (2 * dm * r1), -1, 1)
+    a2 = np.clip((dm * dm + r2 * r2 - r1 * r1) / (2 * dm * r2), -1, 1)
+    k = 0.5 * np.sqrt(np.maximum((-dm + r1 + r2) * (dm + r1 - r2) * (dm - r1 + r2) * (dm + r1 + r2), 0))
+    lens = r1 * r1 * np.arccos(a1) + r2 * r2 * np.arccos(a2) - k
+    return np.where(mid, lens, out)
+
+
+def _prune(caps):
+    """Drop a cap when (almost) all of it lies inside a bigger one — a second peak on the same cap.
+
+    Caps genuinely tucked under another overlap by far less (they are kept)."""
+    if len(caps) < 2:
+        return caps
+    arr = np.array([(c[0], c[1], c[2]) for c in caps], dtype=np.float64)
+    order = np.argsort(-arr[:, 2])
+    keep = np.ones(len(caps), dtype=bool)
+    for i in order:
+        if not keep[i]:
+            continue
+        x, y, r = arr[i]
+        cand = np.nonzero(keep & (arr[:, 2] <= r) & (np.arange(len(caps)) != i))[0]
+        if not len(cand):
+            continue
+        d = np.hypot(arr[cand, 0] - x, arr[cand, 1] - y)
+        near = d < r + arr[cand, 2]
+        cand, d = cand[near], d[near]
+        if not len(cand):
+            continue
+        frac = _lens_area(d, r, arr[cand, 2]) / (np.pi * arr[cand, 2] ** 2)
+        twin = (d < 0.45 * r) & (arr[cand, 2] > 0.7 * r)  # near-coincident, similar size: one cap seen twice
+        keep[cand[(frac > 0.72) | twin]] = False
+    return [c for c, k in zip(caps, keep) if k]
+
+
+def _more_caps(f, footprint, covered, caps, med, cfg, yy, xx):
+    """Second look for caps the brightness view missed, using other colour views.
+
+    Every view is "brighter than its local surroundings" (an inverted view would
+    show the same caps as dark blobs), computed on the blue channel, on
+    min(R,G,B) and on the luminance with different offsets / window sizes.
+    Candidates are circles from distance-transform peaks. A candidate is kept
+    when it is not a duplicate, is not mostly inside an existing cap, and is
+    brighter than the ring just outside it on most of its free outline.
+    """
+    H, W = footprint.shape
+    ys, xs = np.nonzero(footprint)
+    if len(ys) == 0:
+        return []
+    m = 14
+    y0, y1, x0, x1 = max(0, ys.min() - m), min(H, ys.max() + m + 1), max(0, xs.min() - m), min(W, xs.max() + m + 1)
+    sub = (slice(y0, y1), slice(x0, x1))
+    fs, foot, cov = f[sub], footprint[sub], covered[sub].copy()
+    ysub, xsub = yy[sub] - y0, xx[sub] - x0
+    h, w = foot.shape
+    mx, mn = fs.max(-1), fs.min(-1)
+    sat = (mx - mn) / np.maximum(mx, 1.0)
+    lum = 0.299 * fs[..., 0] + 0.587 * fs[..., 1] + 0.114 * fs[..., 2]
+    ok = foot & (sat < 0.42) & (fs[..., 2] < fs[..., 0] + 25) & (lum > 40)
+    views = (("L", lum), ("B", fs[..., 2]), ("min", mn))
+    raw = []
+    for name, ch in views:
+        for off, sig in ((3.0, 9.0), (8.0, 9.0), (15.0, 9.0), (6.0, 15.0), (0.0, 5.0)) if name == "L" else ((3.0, 9.0), (10.0, 9.0), (18.0, 9.0)):
+            mask = ok & (ch > gaussian(ch, sig) - off)
+            mask = gaussian(mask.astype(np.float32), 1.0) > 0.5
+            if mask.any():
+                raw += _peaks(mask, max(1.6, cfg.min_cap_px * 0.8))
+    raw.sort(key=lambda c: -c[2])
+    kx = np.array([c[0] - x0 for c in caps], dtype=np.float64)
+    ky = np.array([c[1] - y0 for c in caps], dtype=np.float64)
+    kr = np.array([c[2] for c in caps], dtype=np.float64)
+    out = []
+    for x, y, r in raw:
+        if r > 2.2 * med or r < cfg.min_cap_px:
+            continue
+        if len(kx):
+            d = np.hypot(kx - x, ky - y)
+            ratio = r / kr
+            if np.any((d < 0.6 * np.maximum(r, kr)) & (ratio > 0.65) & (ratio < 1.5)):
+                continue
+        a0, a1, b0, b1 = int(max(0, x - r)), int(min(w, x + r + 1)), int(max(0, y - r)), int(min(h, y + r + 1))
+        disc = (xsub[b0:b1, a0:a1] - x) ** 2 + (ysub[b0:b1, a0:a1] - y) ** 2 <= r * r
+        if disc.sum() < 6:
+            continue
+        overlap = float(cov[b0:b1, a0:a1][disc].mean())
+        if overlap > 0.45:
+            continue
+        ang = np.linspace(0, 2 * math.pi, 24, endpoint=False)
+        ix, iy = np.rint(x + 0.6 * r * np.cos(ang)).astype(int), np.rint(y + 0.6 * r * np.sin(ang)).astype(int)
+        ox, oy = np.rint(x + 1.3 * r * np.cos(ang)).astype(int), np.rint(y + 1.3 * r * np.sin(ang)).astype(int)
+        inb = (ix >= 0) & (ix < w) & (iy >= 0) & (iy < h) & (ox >= 0) & (ox < w) & (oy >= 0) & (oy < h)
+        ix, iy, ox, oy = ix[inb], iy[inb], ox[inb], oy[inb]
+        free = ~cov[oy, ox]
+        if free.sum() < 6 or np.mean(lum[iy[free], ix[free]] > lum[oy[free], ox[free]] + 3) < 0.55:
+            continue
+        cls = "hidden" if overlap >= 0.15 else ("small" if r < cfg.small_below * med else ("large" if r > cfg.large_above * med else "medium"))
+        out.append((x + x0, y + y0, r, cls))
+        kx, ky, kr = np.append(kx, x), np.append(ky, y), np.append(kr, r)
+        cov[b0:b1, a0:a1] |= disc
+    return out
+
+
+def _peaks(mask: np.ndarray, min_r: float):
+    """Distance-transform peaks of a mask -> [(x, y, radius)]."""
+    dist = _distance(mask, 60)
+    smooth = gaussian(dist, 1.5)
+    pad = np.pad(smooth, 2)
+    pk = smooth >= min_r * 0.8
+    for dy in range(-2, 3):
+        for dx in range(-2, 3):
+            if dy or dx:
+                pk &= smooth >= pad[2 + dy : 2 + dy + smooth.shape[0], 2 + dx : 2 + dx + smooth.shape[1]]
+    ys, xs = np.nonzero(pk)
+    return [(float(x), float(y), float(dist[y, x]) * 1.15 + 0.5) for x, y in zip(xs, ys) if dist[y, x] * 1.15 + 0.5 >= min_r]
 
 
 def _find_hidden(f, bunch, covered, med, cfg, yy, xx, caps):
