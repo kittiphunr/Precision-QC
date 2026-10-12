@@ -18,8 +18,7 @@
 ### 1) เปิดเว็บด้วย GitHub Pages
 1. Push โค้ดขึ้น branch `main`
 2. ไปที่ **Settings → Pages → Build and deployment → Source** เลือก **GitHub Actions**
-3. Workflow **Deploy web app to GitHub Pages** จะรันเทสต์และ deploy ให้อัตโนมัติ
-   (หรือกด *Run workflow* ในแท็บ Actions)
+3. กด *Run workflow* ที่ workflow **Deploy web app to GitHub Pages** ในแท็บ Actions (ตอนนี้ **ปิดการรันอัตโนมัติ** ตอน push แล้ว — ถ้าอยากให้ deploy เองทุกครั้งที่ push เข้า `main` ให้เพิ่ม `push: branches: [main]` กลับใน `.github/workflows/pages.yml`)
 4. เปิด `https://<username>.github.io/<repo>/` → ลากภาพมาวาง หรือกดปุ่มภาพตัวอย่าง
 
 ### 2) อัปโหลดขึ้นโฮสต์จริง (Shared hosting / Apache / Nginx)
