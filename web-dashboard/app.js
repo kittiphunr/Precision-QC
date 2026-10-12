@@ -231,21 +231,29 @@ const BATCH_CSS = `
 .batch-toggle b{display:block}
 .batch-toggle small{display:block;opacity:.75;margin-top:2px}
 #batches .batch-card{margin-bottom:16px}
-.batch-body{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));padding:16px}
-.batch-body img{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in}
-.batch-body figcaption,.batch-note{opacity:.75;font-size:.85em;margin:.4rem 0 0}
-.batch-table tr[data-item]{cursor:pointer}
-.batch-table tr[data-item]:hover{background:rgba(128,128,128,.12)}
+.batch-body{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));padding:16px;align-items:start}
+.batch-fig{margin:0;position:sticky;top:16px}
+.batch-fig figcaption,.batch-note{opacity:.75;font-size:.85em;margin:.4rem 0 0}
+.plate-list{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.plate-card{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;padding:12px;border:1px solid rgba(128,128,128,.35);border-radius:12px;cursor:pointer;transition:background .12s}
+.plate-card:hover{background:rgba(128,128,128,.07)}
+.plate-card.r1{border-color:#f5c542;box-shadow:0 0 0 1px #f5c542}
+.pc-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pc-head b{font-size:1.05em}
+.pc-spacer{flex:1}
+.pc-score{font-weight:800;font-size:1.3em;font-variant-numeric:tabular-nums;line-height:1}
+.pc-grade{opacity:.75;font-size:.85em}
+.pc-note{margin:0;font-size:.85em;opacity:.85}
+.pc-id{display:flex;gap:8px;align-items:center}
 .batch-svg{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in}
 .batch-svg text{paint-order:stroke;stroke:#fff;stroke-linejoin:round;font-family:system-ui,sans-serif;font-weight:700}
-.batch-idcell{min-width:270px}
-.batch-strips{display:grid;gap:4px;margin-bottom:6px;max-width:300px}
+.batch-strips{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:6px}
 .batch-strip{display:block;width:100%;height:auto;background:#fff;border:1px solid rgba(128,128,128,.4);border-radius:4px;cursor:zoom-in}
 .batch-strips.rot .batch-strip,.lightbox .rot{transform:rotate(180deg)}
-.batch-rot{font-size:.8em;padding:.2em .7em;margin-bottom:6px}
+.batch-rot{font-size:.8em;padding:.35em .8em;white-space:nowrap;flex:none}
 .batch-lb{display:grid;gap:10px;justify-items:center;cursor:default}
 .batch-lb img.batch-strip{width:min(94vw,1100px);max-width:none;cursor:default}
-.batch-id{width:100%;min-width:9em;box-sizing:border-box;padding:6px 8px;border:1px solid rgba(128,128,128,.5);border-radius:6px;font:inherit;background:transparent;color:inherit}
+.batch-id{flex:1;min-width:0;box-sizing:border-box;padding:6px 8px;border:1px solid rgba(128,128,128,.5);border-radius:6px;font:inherit;background:transparent;color:inherit}
 .rank-badge{display:inline-block;min-width:1.9em;text-align:center;padding:1px 9px;border-radius:999px;font-weight:700;font-size:.85em;background:rgba(128,128,128,.25);white-space:nowrap}
 .rank-badge.r1{background:#f5c542;color:#3b2d00}
 `;
@@ -327,25 +335,30 @@ function showItem(id) {
 function renderBatch(b) {
   const s = b.data.summary;
   const ranked = [...b.items].sort((x, y) => x.report.rank - y.report.rank);
-  const rows = ranked.map((it) => {
+  const cards = ranked.map((it) => {
     const r = it.report;
+    const note = r.reasons.length ? r.reasons.map((x) => t(`reason.short.${x.code}`)).join(", ") : "";
     return `
-      <tr data-item="${it.id}">
-        <td><span class="rank-badge r${r.rank}">${r.rank}</span></td>
-        <td>#${r.plate}</td>
-        <td class="batch-idcell">
-          <div class="batch-strips${it.rot ? " rot" : ""}">
-            <img class="batch-strip" src="${r.strips.top}" alt="${esc(t("batch.strip.top"))}" title="${esc(t("batch.strip.top"))}" />
-            <img class="batch-strip" src="${r.strips.bottom}" alt="${esc(t("batch.strip.bottom"))}" title="${esc(t("batch.strip.bottom"))}" />
-          </div>
+      <article class="plate-card r${r.rank}" data-item="${it.id}">
+        <header class="pc-head">
+          <span class="rank-badge r${r.rank}" title="${esc(t("batch.th.rank"))}">${r.rank}</span>
+          <b>#${r.plate}</b>
+          <span class="status ${r.passed ? "pass" : "fail"}">${t(r.passed ? "tile.ok" : "tile.ng")}</span>
+          <span class="pc-spacer"></span>
+          <span class="pc-score">${fmt(r.score)}</span>
+          <span class="pc-grade">${r.grade} · ${esc(t(`grade.${r.grade}`))}</span>
+          <button type="button" class="pure-button view-btn">${t("btn.view")}</button>
+        </header>
+        ${note ? `<p class="pc-note">${esc(note)}</p>` : ""}
+        <div class="batch-strips${it.rot ? " rot" : ""}">
+          <img class="batch-strip" src="${r.strips.top}" alt="${esc(t("batch.strip.top"))}" title="${esc(t("batch.strip.top"))}" />
+          <img class="batch-strip" src="${r.strips.bottom}" alt="${esc(t("batch.strip.bottom"))}" title="${esc(t("batch.strip.bottom"))}" />
+        </div>
+        <div class="pc-id">
+          <input type="text" class="batch-id" maxlength="60" value="${esc(it.label || "")}" placeholder="${esc(t("batch.ph"))}" aria-label="${esc(`${t("batch.th.label")} #${r.plate}`)}" />
           <button type="button" class="pure-button batch-rot">↻ ${esc(t("batch.rot"))}</button>
-          <input type="text" class="batch-id" maxlength="60" value="${esc(it.label || "")}" placeholder="${esc(t("batch.ph"))}" aria-label="${esc(`${t("batch.th.label")} #${r.plate}`)}" /></td>
-        <td><span class="status ${r.passed ? "pass" : "fail"}">${t(r.passed ? "tile.ok" : "tile.ng")}</span></td>
-        <td class="num">${fmt(r.score)}</td>
-        <td>${r.grade} · ${t(`grade.${r.grade}`)}</td>
-        <td>${esc(r.reasons.length ? r.reasons.map((x) => t(`reason.short.${x.code}`)).join(", ") : "—")}</td>
-        <td><button type="button" class="pure-button view-btn">${t("btn.view")}</button></td>
-      </tr>`;
+        </div>
+      </article>`;
   }).join("");
   b.el.className = "panel card batch-card";
   b.el.innerHTML = `
@@ -357,24 +370,16 @@ function renderBatch(b) {
       <button type="button" class="pure-button pure-button-primary dl-batch">${esc(t("batch.pdf"))}</button>
     </div>
     <div class="batch-body">
-      <figure>${overviewSvg(b)}<figcaption>${esc(t("batch.note"))}</figcaption></figure>
-      <div class="table-wrap">
-        <table class="pure-table pure-table-horizontal batch-table">
-          <thead><tr>
-            <th>${esc(t("batch.th.rank"))}</th><th>${esc(t("batch.th.plate"))}</th><th>${esc(t("batch.th.label"))}</th><th>${esc(t("th.result"))}</th>
-            <th class="num">${esc(t("th.score"))}</th><th>${esc(t("th.grade"))}</th><th>${esc(t("th.note"))}</th><th></th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      <figure class="batch-fig">${overviewSvg(b)}<figcaption>${esc(t("batch.note"))}</figcaption></figure>
+      <div class="plate-list">${cards}</div>
     </div>`;
   $(".dl-batch", b.el).addEventListener("click", () => downloadPdf(ranked));
   bindOverview(b);
   const hint = document.createElement("p");
   hint.className = "batch-note";
   hint.textContent = t("batch.labelHint");
-  $(".table-wrap", b.el).appendChild(hint);
-  b.el.querySelectorAll("tr[data-item]").forEach((tr) => {
+  $(".plate-list", b.el).appendChild(hint);
+  b.el.querySelectorAll(".plate-card").forEach((tr) => {
     const it = b.items.find((x) => x.id === Number(tr.dataset.item));
     const input = $(".batch-id", tr);
     input.addEventListener("click", (e) => e.stopPropagation());
@@ -400,11 +405,11 @@ function renderBatch(b) {
       e.preventDefault();
       const nextId = tr.nextElementSibling?.dataset.item;
       input.blur(); // fires "change"
-      if (nextId) b.el.querySelector(`tr[data-item="${nextId}"] .batch-id`)?.focus();
+      if (nextId) b.el.querySelector(`.plate-card[data-item="${nextId}"] .batch-id`)?.focus();
     });
     input.addEventListener("change", () => {
       setPlateLabel(b, it, input.value);
-      $(".batch-svg", b.el).outerHTML = overviewSvg(b); // refresh the tags only; the table keeps its focus
+      $(".batch-svg", b.el).outerHTML = overviewSvg(b); // refresh the tags only; the cards keep their focus
       bindOverview(b);
     });
     tr.addEventListener("click", () => showItem(Number(tr.dataset.item)));
