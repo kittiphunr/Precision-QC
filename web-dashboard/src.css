@@ -87,13 +87,16 @@
   .sb a:hover .ic, .sb-btn:hover .ic { @apply text-indigo-600 dark:text-indigo-300; }
   .sb a.active { @apply bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/30; }
   .sb a.active .ic { @apply text-white; }
-  .sb .engine { @apply w-full rounded-2xl border-0 bg-transparent px-3.5 py-2.5 text-sm gap-3; }
+  .sb .engine { @apply w-full rounded-2xl border-0 bg-transparent px-3.5 py-2.5 text-sm gap-3 items-start; }
+  .sb .engine .dot { @apply mt-1.5; }
+  .sb .engine .t { @apply min-w-0 leading-snug break-words whitespace-normal; } /* long status text wraps inside the card instead of being clipped */
   .sb-collapse .ic { transition: transform .18s; }
   html.sb-min .sb-collapse .ic { transform: rotate(180deg); }
   /* collapsed rail: icon-only round buttons */
   html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-center; }
   html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 64px; margin-inline: auto; }
-  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-11 h-11 p-0 gap-0 rounded-full justify-center mx-auto; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-11 h-11 p-0 gap-0 rounded-full justify-center items-center mx-auto; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .engine .dot { @apply mt-0; }
   html.sb-min .sb:not(:hover):not(:focus-within) .t { @apply hidden; }
   .sb-fab { display: none; }
   .sb-backdrop { @apply fixed inset-0 z-30 bg-slate-950/45; }
@@ -110,6 +113,8 @@
     html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-start; }
     html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 100%; }
     html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-full h-auto px-3.5 py-2.5 gap-3 rounded-2xl justify-start m-0; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .engine { @apply items-start; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .engine .dot { @apply mt-1.5; }
     html.sb-min .sb:not(:hover):not(:focus-within) .t { display: block; }
     .panel-pop { left: 1rem; right: 1rem; width: auto; bottom: 5rem; }
     .sb-fab { @apply fixed z-30 left-4 bottom-5 w-12 h-12 rounded-full bg-indigo-600 text-white place-items-center shadow-xl shadow-indigo-500/40 border-0 cursor-pointer; display: grid; }
