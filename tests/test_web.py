@@ -116,3 +116,12 @@ def test_pdf_engine_is_shared_and_both_pages_can_make_reports():
     assert "makePdf(" in caps and "function capsReportPages(" in caps
     for edition in ("web", "web-dashboard"):
         assert 'id="busy"' in (ROOT / edition / "caps.html").read_text(encoding="utf-8")  # makePdf shows it
+
+
+def test_readme_images_exist_and_none_is_unused():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    used = set(re.findall(r"\]\((docs/img/[^)]+)\)", readme))
+    assert len(used) >= 10
+    on_disk = {f"docs/img/{p.name}" for p in (ROOT / "docs" / "img").glob("*.jpg")}
+    assert used == on_disk, (sorted(used - on_disk), sorted(on_disk - used))
+    assert sum(p.stat().st_size for p in (ROOT / "docs" / "img").iterdir()) < 5_000_000  # keeps the repo light
