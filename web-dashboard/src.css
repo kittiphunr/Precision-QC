@@ -50,18 +50,10 @@
   .pure-table td, .pure-table th { @apply border-b border-slate-200 dark:border-slate-800 px-4 py-2.5; }
   .pure-table tbody tr:last-child td { @apply border-b-0; }
 
-  /* header — Certify Hub style: sticky top bar with brand, status, display settings and About */
-  .site-header { @apply sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800; }
-  .hdr { @apply max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3; }
-  .brand { @apply flex items-center gap-3 no-underline text-slate-900 dark:text-slate-100 min-w-0; }
-  .badge-logo { @apply w-10 h-10 rounded-xl bg-indigo-600 text-white grid place-items-center shrink-0; }
-  .brand-text { @apply grid min-w-0 leading-tight; }
-  .brand-text b { @apply text-base font-bold; }
-  .brand-text small { @apply text-xs text-slate-500 dark:text-slate-400 truncate max-w-48 sm:max-w-md; }
-  .hdr-tools { @apply flex items-center gap-2 shrink-0; }
+  /* sidebar — Certify Hub admin style: floating icon rail (hover to expand), drawer on phones */
   .icon-btn { @apply w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 grid place-items-center shrink-0 cursor-pointer no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-300; }
   .settings-wrap { @apply relative; }
-  .panel-pop { @apply absolute right-0 top-full mt-2 w-72 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl; }
+  .panel-pop { @apply fixed z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl; left: 262px; bottom: 76px; }
   .panel-title { @apply m-0 font-bold; }
   .panel-label { @apply mt-3.5 mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
   .seg { @apply flex bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-0.5 gap-0.5; }
@@ -69,11 +61,60 @@
   .seg button:hover { @apply text-slate-900 dark:text-white; }
   .seg button.is-active { @apply bg-indigo-500 text-white; }
   .engine { @apply inline-flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full; }
-  .engine #engine-text { @apply hidden sm:inline; }
   .engine .dot { @apply w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0; }
   .engine.loading .dot { @apply animate-pulse; }
   .engine.ready .dot { @apply bg-emerald-500; }
   .engine.error .dot { @apply bg-rose-500; }
+
+
+  :root { --sbw: 246px; }
+  html.sb-min { --sbw: 86px; }
+  .app { @apply min-h-screen; }
+  .app-main { @apply min-w-0 flex flex-col; margin-left: var(--sbw); transition: margin-left .18s ease; }
+  .sb { @apply fixed left-0 top-0 bottom-0 z-40 flex flex-col gap-3 pl-3.5 py-3.5 overflow-x-hidden overflow-y-auto; width: var(--sbw); transition: width .18s ease, transform .2s ease; scrollbar-width: none; overscroll-behavior: contain; }
+  .sb::-webkit-scrollbar { display: none; }
+  html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 246px; @apply bg-slate-100 dark:bg-slate-950 shadow-2xl; }
+  .sb .t { @apply whitespace-nowrap; }
+  .sb-brand { @apply flex items-center gap-3 h-12 no-underline text-slate-900 dark:text-slate-100 whitespace-nowrap; }
+  .badge-logo { @apply w-11 h-11 rounded-full bg-indigo-600 text-white grid place-items-center shrink-0 shadow-lg shadow-indigo-500/30; }
+  .sb-brand b { @apply block text-base leading-tight; }
+  .sb-brand small { @apply block text-xs text-slate-500 dark:text-slate-400 whitespace-normal leading-tight line-clamp-2; }
+  .sb-cap { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2.5 shadow-sm flex flex-col gap-1 overflow-hidden; }
+  .sb-foot { @apply mt-auto; }
+  .sb a, .sb-btn { @apply relative flex items-center gap-3 w-full px-3.5 py-2.5 rounded-2xl text-sm text-slate-600 dark:text-slate-300 no-underline bg-transparent border-0 cursor-pointer text-left transition; }
+  .sb .ic { @apply grid place-items-center shrink-0 text-slate-400; }
+  .sb a:hover, .sb-btn:hover { @apply bg-indigo-50 dark:bg-slate-800 text-slate-900 dark:text-white; }
+  .sb a:hover .ic, .sb-btn:hover .ic { @apply text-indigo-600 dark:text-indigo-300; }
+  .sb a.active { @apply bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/30; }
+  .sb a.active .ic { @apply text-white; }
+  .sb .engine { @apply w-full rounded-2xl border-0 bg-transparent px-3.5 py-2.5 text-sm gap-3; }
+  .sb-collapse .ic { transition: transform .18s; }
+  html.sb-min .sb-collapse .ic { transform: rotate(180deg); }
+  /* collapsed rail: icon-only round buttons */
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-center; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 64px; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-11 h-11 p-0 gap-0 rounded-full justify-center mx-auto; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .t { @apply hidden; }
+  .sb-fab { display: none; }
+  .sb-backdrop { @apply fixed inset-0 z-30 bg-slate-950/45; }
+  .scroll-anchor { @apply scroll-mt-4; }
+  .results-wrap { @apply grid gap-4 min-w-0; }
+  html { @apply motion-safe:scroll-smooth; }
+
+  @media (max-width: 900px) {
+    .app-main { margin-left: 0; }
+    .sb { @apply bg-slate-100 dark:bg-slate-950 p-3.5; width: 272px; transform: translateX(-102%); }
+    .sb.open { transform: none; @apply shadow-2xl; }
+    html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 272px; }
+    .sb-collapse { display: none; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-start; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 100%; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-full h-auto px-3.5 py-2.5 gap-3 rounded-2xl justify-start m-0; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .t { display: block; }
+    .panel-pop { left: 1rem; right: 1rem; width: auto; bottom: 5rem; }
+    .sb-fab { @apply fixed z-30 left-4 bottom-5 w-12 h-12 rounded-full bg-indigo-600 text-white place-items-center shadow-xl shadow-indigo-500/40 border-0 cursor-pointer; display: grid; }
+    .container { @apply pb-24; }
+  }
 
   /* page */
   .container { @apply max-w-6xl mx-auto w-full px-4 py-5 grid gap-4 min-w-0; }
