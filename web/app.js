@@ -4,10 +4,6 @@
  * with html2canvas + jsPDF, both loaded on demand. Shared code (language,
  * theme, engine loader, numpad) is in common.js, texts in i18n.js. */
 
-const PDF_LIBS = [
-  "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-];
 const CFG_KEY = "precision-qc-config";
 const INFO_KEY = "precision-qc-report-info";
 
@@ -372,11 +368,6 @@ function initCamera() {
 }
 
 /* ------------------------------------------------------------------ analyse */
-function newReportNo(date) {
-  const d = isoDate(date).replace(/-/g, "");
-  const rnd = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, "0");
-  return `PQC-${d}-${rnd}`;
-}
 
 async function runFiles(files, batch = batchMode) {
   if (!api || !files.length) return;
@@ -619,27 +610,6 @@ $("#dl-pdf-all").addEventListener("click", () => downloadPdf(results));
  * every page, page x of y, customer, sample description & dates, method, results
  * with units, requirements, statement of conformity with the decision rule,
  * remarks/deviations, authorisation, disclaimer and end-of-report mark. */
-const libPromises = {};
-function loadScript(src) {
-  libPromises[src] ??= new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = () => { delete libPromises[src]; s.remove(); reject(new Error(`cannot load ${src}`)); };
-    document.head.appendChild(s);
-  });
-  return libPromises[src];
-}
-
-// ISO 8601 calendar dates (YYYY-MM-DD) in local time
-const isoDate = (d) => {
-  if (!d) return "—";
-  if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-  const x = new Date(d), p = (n) => String(n).padStart(2, "0");
-  return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}`;
-};
-const dash = (v) => (v ? esc(v) : "—");
-
 function resultRows(r, L) {
   const m = r.metrics, k = r.contamination, c = r.config;
   const judge = (ok) => (ok ? `<span class="r-pass">${L("r.pass")}</span>` : `<span class="r-fail">${L("r.fail")}</span>`);
@@ -784,65 +754,22 @@ function reportPages(item, info, issued, lng) {
   return page1 + page2;
 }
 
-// Content must end above the footer; if it does not, use the denser layout.
-function fitPage(page) {
-  const limit = page.querySelector(".r-foot").offsetTop - 8;
-  const bottom = () => Math.max(...[...page.children].filter((el) => !el.classList.contains("r-foot"))
-    .map((el) => el.offsetTop + el.offsetHeight));
-  if (bottom() > limit) page.classList.add("compact");
-}
-
-async function waitForImages(root) {
-  await Promise.all([...root.querySelectorAll("img")].map((img) =>
-    img.complete ? Promise.resolve() : new Promise((res) => { img.onload = img.onerror = res; })));
-}
-
 async function downloadPdf(items) {
   if (!items.length) return;
   const lng = lang;
-  const overlay = $("#busy");
-  overlay.hidden = false;
-  $("#busy-text").textContent = t("busy.pdf");
-  const host = document.createElement("div");
-  host.className = "report-host";
-  document.body.appendChild(host);
-  try {
-    for (const src of PDF_LIBS) await loadScript(src);
-    if (document.fonts?.ready) await document.fonts.ready;
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-    const info = readForm($("#info"), false);
-    const issued = new Date();
-    let first = true;
-    for (const [i, item] of items.entries()) {
-      $("#busy-text").textContent = t("busy.pdfN", { i: i + 1, n: items.length });
-      host.innerHTML = reportPages(item, info, issued, lng);
-      await waitForImages(host);
-      for (const page of host.querySelectorAll(".rpage")) {
-        fitPage(page);
-        const canvas = await html2canvas(page, { scale: 2, backgroundColor: "#ffffff", logging: false, scrollX: 0, scrollY: 0 });
-        if (!first) pdf.addPage("a4", "portrait");
-        first = false;
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297, undefined, "FAST");
-      }
-    }
-    pdf.setProperties({
+  const info = readForm($("#info"), false);
+  const issued = new Date();
+  await makePdf({
+    n: items.length,
+    pages: (i) => reportPages(items[i], info, issued, lng),
+    props: {
       title: items.length === 1 ? t("r.pdfTitleOne", { no: items[0].reportNo }, lng) : t("r.pdfTitleMany", {}, lng),
       subject: "Fungal culture quality assessment",
-      creator: `Precision QC v${APP_VERSION}`,
-      author: `${t("credit.name", {}, lng)}, ${t("credit.line2", {}, lng)}`,
-    });
-    const name = items.length === 1
+    },
+    fileName: items.length === 1
       ? `${items[0].reportNo}_${stem(items[0].report.name).replace(/[\\/:*?"<>|\s]+/g, "_")}_${lng.toUpperCase()}.pdf`
-      : `Precision-QC_reports_${isoDate(issued)}_${lng.toUpperCase()}.pdf`;
-    download(name, pdf.output("blob"));
-  } catch (err) {
-    console.error(err);
-    alert(t("alert.pdfFail"));
-  } finally {
-    host.remove();
-    overlay.hidden = true;
-  }
+      : `Precision-QC_reports_${isoDate(issued)}_${lng.toUpperCase()}.pdf`,
+  });
 }
 
 
