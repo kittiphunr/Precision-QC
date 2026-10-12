@@ -6,6 +6,7 @@ import pytest
 
 from precision_qc import QCConfig, analyze
 from precision_qc.api import analyze_to_json
+from precision_qc.caps import CapConfig
 from precision_qc.cli import main as cli_main
 from precision_qc.render import report_image
 
@@ -257,7 +258,7 @@ def test_caps_counts_synthetic_bunch_by_size():
     res = count_caps(img)
     assert abs(res.report["total"] - n) <= 0.15 * n
     c = res.report["counts"]
-    assert c["small"] + c["medium"] + c["large"] == res.report["total"]
+    assert sum(c.values()) == res.report["total"]
     assert 0 < c["large"] < res.report["total"]  # the big discs are told apart from the small ones
 
 
@@ -290,3 +291,30 @@ def test_caps_api_and_cli(tmp_path):
     assert "contrast" in json.loads(default_caps_config_json())
     assert cli_main([str(f), "--caps", "-o", str(tmp_path / "out")]) == 0
     assert (tmp_path / "out" / "caps_summary.csv").is_file() and (tmp_path / "out" / "bunch_caps.png").is_file()
+
+
+def test_caps_recovers_cap_hidden_under_another_and_reports_area_share():
+    from precision_qc.caps import count_caps
+
+    img, _ = bunch_photo(n_big=14, n_small=0, seed=3)
+    h, w = img.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    base = count_caps(img).report
+    # a cream cap tucked under the biggest visible one: only a crescent peeks out
+    probe = count_caps(img)
+    x, y, r, _ = max(probe.caps, key=lambda c: c[2])
+    s = w / probe.photo.shape[1]  # work size -> this image
+    x, y, r = x * s, y * s, r * s
+    for (hx, hy, hr, on_top) in ((x + 0.95 * r, y, 0.8 * r, False),):
+        d = np.hypot(xx - hx, yy - hy)
+        img[d <= hr] = (225, 215, 195)
+        top = np.hypot(xx - x, yy - y) <= r
+        img[top] = (238, 230, 210)
+    rep = count_caps(img).report
+    assert rep["counts"]["hidden"] >= 1
+    assert rep["total"] > base["total"]
+    a = rep["area_percent"]
+    assert 0 < a["visible"] <= 100 and 0 <= a["hidden"] < 20
+    assert abs(a["visible"] + a["hidden"] + a["gaps"] - 100) < 0.5
+    off = count_caps(img, CapConfig(find_hidden=0)).report
+    assert off["counts"]["hidden"] == 0
