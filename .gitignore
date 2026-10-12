@@ -5,7 +5,6 @@ _site/
 reports/
 .venv/
 # compiled by scripts/build_site.py — not source
-web-tw/tw.css
 web-dashboard/tw-dash.css
 
 # macOS

@@ -6,7 +6,7 @@
 
 Two editions are built from one command, each in its own self-contained folder:
   <out>/pure/       the Pure.css edition      (source: web/)
-  <out>/tailwind/   the Tailwind CSS edition  (source: web-tw/, tw.css compiled here)
+  <out>/dashboard/  the Dashboard edition     (source: web-dashboard/, tw-dash.css compiled with Tailwind here)
 Both share the same Python engine, samples and behaviour — only the styling
 differs — so you upload whichever folder you prefer (or both).
 
@@ -39,8 +39,6 @@ BATCH_DIR = Path("samples") / "แบบชุด"  # photos with several dishes
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
 EDITION_ASSETS = {"web": ("style.css", "i18n.js", "app.js"),
-                  "web-tw": ("tw.css", "i18n.js", "app.js"),
-                  "web-lab": ("style-lab.css", "i18n.js", "app.js"),
                   "web-dashboard": ("tw-dash.css", "i18n.js", "app.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
@@ -68,7 +66,7 @@ def _minify_js(path: Path) -> bool:
 
 def _build_tailwind(src_dir: Path, out_css: Path) -> None:
     """Compile <src_dir>/src.css -> out_css with a pinned Tailwind. Required for
-    the Tailwind edition — the build fails if it can't run."""
+    the Dashboard edition — the build fails if it can't run."""
     try:
         res = subprocess.run(
             ["npx", "--yes", TAILWIND, "-c", "tailwind.config.js",
@@ -76,7 +74,7 @@ def _build_tailwind(src_dir: Path, out_css: Path) -> None:
             cwd=src_dir, capture_output=True, text=True, timeout=300,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-        raise SystemExit(f"Tailwind build failed ({e}). Node.js / npx is required to build the web-tw edition.")
+        raise SystemExit(f"Tailwind build failed ({e}). Node.js / npx is required to build the web-dashboard edition.")
     if res.returncode != 0:
         raise SystemExit(f"Tailwind build failed:\n{res.stderr.strip()}")
 
@@ -170,8 +168,6 @@ def build(out: Path, lock_domains=None) -> Path:
     print(f"Built (engine {build_id}, {len(py_files)} python files, {len(samples)} samples):")
     # each edition goes in its own self-contained folder — upload any one whole
     _assemble("web", out / "pure", build_id, samples, lock_domains, batch_samples)         # Pure.css edition
-    _assemble("web-tw", out / "tailwind", build_id, samples, lock_domains, batch_samples)  # Tailwind edition
-    _assemble("web-lab", out / "lab", build_id, samples, lock_domains, batch_samples)      # Lab edition (+ webcam)
     _assemble("web-dashboard", out / "dashboard", build_id, samples, lock_domains, batch_samples)  # Dashboard (+ webcam)
     _landing(out)  # a chooser at the root so / is not a 404 when all are uploaded
     return out
@@ -207,8 +203,7 @@ def _landing(out: Path) -> None:
     <h1>Precision QC</h1>
     <p>เลือกเวอร์ชันหน้าตาที่ต้องการใช้งาน · Choose an edition</p>
     <a class="ed" href="pure/"><span>Pure.css<small>เวอร์ชันดั้งเดิม · original edition</small></span><span class="arrow">→</span></a>
-    <a class="ed" href="tailwind/"><span>Tailwind CSS<small>โทนเขียว · green theme</small></span><span class="arrow">→</span></a>
-    <a class="ed" href="lab/"><span>Lab<small>สำหรับห้องแล็บ + ถ่ายจากกล้อง · lab UI with webcam</small></span><span class="arrow">→</span></a>
+    <a class="ed" href="dashboard/"><span>Dashboard<small>แดชบอร์ดสีม่วง + ถ่ายจากกล้อง · purple dashboard with webcam</small></span><span class="arrow">→</span></a>
   </div>
 </body>
 </html>
@@ -228,7 +223,7 @@ def main() -> None:
     out = build(Path(args.out), lock_domains=args.lock_domain)
     if args.serve:
         handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(out))
-        print(f"Serving on http://localhost:{args.port}  (chooser at / · editions at /pure/ and /tailwind/ · Ctrl+C to stop)")
+        print(f"Serving on http://localhost:{args.port}  (chooser at / · editions at /pure/ and /dashboard/ · Ctrl+C to stop)")
         http.server.ThreadingHTTPServer(("", args.port), handler).serve_forever()
 
 
