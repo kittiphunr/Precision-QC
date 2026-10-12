@@ -487,12 +487,14 @@ const CAPS_CSS = `
 .caps-bar-track{height:8px;border-radius:4px;background:rgba(128,128,128,.2);overflow:hidden;grid-column:2}
 .caps-bar-fill{height:100%}
 .caps-n{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.caps-sub{margin:4px 0 0;font-size:.95em}
 .caps-meta{margin:0;font-size:.85em;opacity:.75}
 .caps-actions{display:flex;flex-wrap:wrap;gap:8px}
 .caps-set{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
 `;
-const CAP_COLORS = { small: "#50dc5a", medium: "#283ce6", large: "#eb3228" };
-const CAP_CLASSES = ["small", "medium", "large"];
+const CAP_COLORS = { small: "#50dc5a", medium: "#283ce6", large: "#eb3228", hidden: "#ffaa00" };
+const CAP_CLASSES = ["small", "medium", "large", "hidden"];
+const CAP_AREA_ROWS = [["small", "caps.small"], ["medium", "caps.medium"], ["large", "caps.large"], ["hidden", "caps.hiddenArea"], ["gaps", "caps.gaps"]];
 let capsList = []; // { file, data }
 
 function initCapsUI() {
@@ -518,6 +520,9 @@ function initCapsUI() {
       <form id="caps-cfg" class="pure-form pure-form-stacked" onsubmit="return false">
         <div class="caps-set">
           <label><span data-i18n="caps.f.contrast"></span><input name="contrast" type="number" step="0.5" min="-10" max="20" /></label>
+          <label><span data-i18n="caps.f.find_hidden"></span><input name="find_hidden" type="number" step="1" min="0" max="1" /></label>
+          <label><span data-i18n="caps.f.hidden_sat"></span><input name="hidden_sat" type="number" step="0.02" min="0.05" max="0.5" /></label>
+          <label><span data-i18n="caps.f.shadow_lift"></span><input name="shadow_lift" type="number" step="0.05" min="0.2" max="1" /></label>
           <label><span data-i18n="caps.f.small_below"></span><input name="small_below" type="number" step="0.05" min="0.3" max="1" /></label>
           <label><span data-i18n="caps.f.large_above"></span><input name="large_above" type="number" step="0.05" min="1" max="3" /></label>
         </div>
@@ -574,12 +579,22 @@ function renderCapsCard(c) {
       <span class="caps-n">${d.counts[k]} <span class="muted">(${fmt(d.percent[k])}%)</span></span>
       <span class="caps-bar-track"><span class="caps-bar-fill" style="display:block;width:${d.percent[k]}%;background:${CAP_COLORS[k]}"></span></span>
     </div>`).join("");
+  const a = d.area_percent;
+  const areaRows = CAP_AREA_ROWS.map(([k, label]) => `
+    <div class="caps-row">
+      <span class="caps-dot" style="border-color:${CAP_COLORS[k] || "#8a8f98"}"></span><span>${esc(t(label))}</span>
+      <span class="caps-n">${fmt(a[k])}%</span>
+      <span class="caps-bar-track"><span class="caps-bar-fill" style="display:block;width:${Math.min(100, a[k])}%;background:${CAP_COLORS[k] || "#8a8f98"}"></span></span>
+    </div>`).join("");
   c.el.innerHTML = `
     <img class="caps-img" src="${d.overlay}" alt="${esc(t("caps.alt"))}" />
     <div class="caps-info">
       <h3>${esc(c.file.name)}</h3>
       <div class="caps-total">${d.total}<small>${esc(t("caps.unit"))}</small></div>
       <div class="caps-split">${rows}</div>
+      <h4 class="caps-sub">${esc(t("caps.areaTitle"))}</h4>
+      <div class="caps-split">${areaRows}</div>
+      <p class="caps-meta">${esc(t("caps.areaNote", { v: fmt(a.visible), a: fmt(d.bunch_area_pct, 0) }))}</p>
       <p class="caps-meta">${esc(t("caps.meta", { d: fmt(d.median_diameter_px, 0), a: fmt(d.bunch_area_pct, 0) }))}</p>
       <p class="caps-meta">${esc(t("caps.note"))}</p>
       <div class="caps-actions">

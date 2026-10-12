@@ -118,16 +118,18 @@ def run_caps(files, args, out: Path) -> int:
         if not args.no_images:
             overlay_image(res).save(out / f"{f.stem}_caps.png")
         c = rep["counts"]
-        print(f"{rep['total']:5d} caps  small {c['small']}  medium {c['medium']}  large {c['large']}  {f.name}")
+        print(f"{rep['total']:5d} caps  small {c['small']}  medium {c['medium']}  large {c['large']}  hidden {c['hidden']}  "
+              f"visible-area {rep['area_percent']['visible']}%  {f.name}")
     with open(out / "caps_summary.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
-        w.writerow(["image", "total", "small", "medium", "large", "small_pct", "medium_pct", "large_pct", "median_diameter_px"])
+        w.writerow(["image", "total", "small", "medium", "large", "small_pct", "medium_pct", "large_pct", "median_diameter_px",
+                    "hidden", "area_small_pct", "area_medium_pct", "area_large_pct", "area_visible_pct", "area_hidden_pct", "area_gaps_pct"])
         for r in rows:
-            c, p = r["counts"], r["percent"]
+            c, p, a = r["counts"], r["percent"], r["area_percent"]
             w.writerow([r["name"], r["total"], c["small"], c["medium"], c["large"], p["small"], p["medium"], p["large"],
-                        r["median_diameter_px"]])
-    lines = ["## 🍄 Precision QC — mushroom cap count", "", "| Image | Total | Small | Medium | Large |", "|---|---|---|---|---|"]
-    lines += [f"| {r['name']} | {r['total']} | {r['counts']['small']} | {r['counts']['medium']} | {r['counts']['large']} |" for r in rows]
+                        r["median_diameter_px"], c["hidden"], a["small"], a["medium"], a["large"], a["visible"], a["hidden"], a["gaps"]])
+    lines = ["## 🍄 Precision QC — mushroom cap count", "", "| Image | Total | Small | Medium | Large | Hidden | Caps area % of bunch |", "|---|---|---|---|---|---|---|"]
+    lines += [f"| {r['name']} | {r['total']} | {r['counts']['small']} | {r['counts']['medium']} | {r['counts']['large']} | {r['counts']['hidden']} | {r['area_percent']['visible']} |" for r in rows]
     md = "\n".join(lines) + "\n"
     (out / "caps_summary.md").write_text(md, encoding="utf-8")
     if os.environ.get("GITHUB_STEP_SUMMARY"):
