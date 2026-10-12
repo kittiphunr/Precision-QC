@@ -1,16 +1,19 @@
 """Static checks for the web editions: translations stay complete, the Dashboard's
 About/credits dialog is wired to real keys, and the credits match THIRD-PARTY-NOTICES.md."""
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 I18N = (ROOT / "web" / "i18n.js").read_text(encoding="utf-8")
 
 
 def keys_by_lang():
     out = {}
     for lang, body in re.findall(r"(?ms)^  (th|en|zh): \{\n(.*?)^  \},?\n", I18N):
-        out[lang] = set(re.findall(r'^    "([^"]+)":', body, re.M))
+        # a key starts a line, or follows a comma when several share one line ("r.param": ..., "r.result": ...)
+        out[lang] = set(re.findall(r'(?:^    |,\s)"([^"]+)":', body, re.M))
     return out
 
 
@@ -82,3 +85,43 @@ def test_caps_settings_labels_have_hints():
     assert len(fields) >= 6
     for k in fields:
         assert k in keys and f"{k}.h" in keys, k
+
+
+def test_every_counting_step_has_a_translated_title_and_description():
+    from precision_qc.caps import STEP_KEYS
+
+    keys = keys_by_lang()
+    for lang, ks in keys.items():
+        for step in STEP_KEYS:
+            assert f"caps.step.{step}" in ks and f"caps.step.{step}.d" in ks, (lang, step)
+
+
+def test_every_translation_key_used_by_the_cap_page_exists_in_all_languages():
+    js = (ROOT / "web" / "caps.js").read_text(encoding="utf-8") + (ROOT / "web" / "common.js").read_text(encoding="utf-8")
+    used = set(re.findall(r'\b(?:L|t)\("([a-zA-Z][\w]*\.[\w.]*)"', js))
+    assert len(used) > 40  # the page + the PDF report
+    for lang, ks in keys_by_lang().items():
+        missing = sorted(k for k in used if k not in ks)
+        assert not missing, (lang, missing)
+    # keys built from a variable: caps.<size> and r.cap.* used by the report
+    for lang, ks in keys_by_lang().items():
+        assert {"caps.small", "caps.medium", "caps.large", "caps.hidden"} <= ks, lang
+
+
+def test_pdf_engine_is_shared_and_both_pages_can_make_reports():
+    common = (ROOT / "web" / "common.js").read_text(encoding="utf-8")
+    assert "async function makePdf(" in common and "html2canvas" in common
+    assert "makePdf(" in (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    caps = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
+    assert "makePdf(" in caps and "function capsReportPages(" in caps
+    for edition in ("web", "web-dashboard"):
+        assert 'id="busy"' in (ROOT / edition / "caps.html").read_text(encoding="utf-8")  # makePdf shows it
+
+
+def test_readme_images_exist_and_none_is_unused():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    used = set(re.findall(r"\]\((docs/img/[^)]+)\)", readme))
+    assert len(used) >= 10
+    on_disk = {f"docs/img/{p.name}" for p in (ROOT / "docs" / "img").glob("*.jpg")}
+    assert used == on_disk, (sorted(used - on_disk), sorted(on_disk - used))
+    assert sum(p.stat().st_size for p in (ROOT / "docs" / "img").iterdir()) < 5_000_000  # keeps the repo light

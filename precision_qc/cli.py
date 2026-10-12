@@ -17,7 +17,7 @@ from typing import List
 
 from .analyzer import QCConfig, analyze
 from .batch import analyze_plates, overview_image, rank_key
-from .caps import CapConfig, count_caps, overlay_image
+from .caps import CapConfig, count_caps, overlay_image, step_images
 from .render import report_image
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
@@ -117,6 +117,11 @@ def run_caps(files, args, out: Path) -> int:
         (out / f"{f.stem}_caps.json").write_text(json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8")
         if not args.no_images:
             overlay_image(res).save(out / f"{f.stem}_caps.png")
+        if args.steps:  # one cropped picture per step of the technique
+            sdir = out / f"{f.stem}_steps"
+            sdir.mkdir(exist_ok=True)
+            for i, (key, im) in enumerate(step_images(res), start=1):
+                im.save(sdir / f"{i:02d}_{key}.png")
         c = rep["counts"]
         print(f"{rep['total']:5d} caps  small {c['small']}  medium {c['medium']}  large {c['large']}  hidden {c['hidden']}  "
               f"visible-area {rep['area_percent']['visible']}%  {f.name}")
@@ -150,6 +155,8 @@ def main(argv=None) -> int:
                     help="each photo contains several dishes: split them, analyse each one and rank them")
     ap.add_argument("--caps", action="store_true",
                     help="count the mushroom caps of a bunch (ช่อดอก): small / medium / large (use --set contrast=3 etc.)")
+    ap.add_argument("--steps", action="store_true",
+                    help="with --caps: also save the counting technique step by step (<image>_steps/NN_<step>.png)")
     ap.add_argument("--strict", action="store_true", help="exit with code 1 if any image FAILs")
     args = ap.parse_args(argv)
 
