@@ -23,7 +23,11 @@ jobs:
           diff -r "$RUNNER_TEMP/site" deploy || { echo "::error::deploy/ is out of date — run: python scripts/build_site.py --out deploy $args"; exit 1; }
       - name: Analyse sample images
         run: python -m precision_qc samples -o reports
+      - name: Analyse multi-dish photos
+        run: python -m precision_qc "samples/แบบชุด" --multi -o reports-multi
       - uses: actions/upload-artifact@v4
         with:
           name: sample-reports
-          path: reports/
+          path: |
+            reports/
+            reports-multi/
