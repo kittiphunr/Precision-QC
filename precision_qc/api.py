@@ -10,7 +10,7 @@ from PIL import Image
 
 from .analyzer import QCConfig, analyze
 from .batch import analyze_plates, label_strips
-from .caps import CapConfig, count_caps, overlay_image
+from .caps import CapConfig, count_caps, overlay_image, step_images
 from .render import PANEL_TITLES, render_panels, to_data_url
 
 
@@ -56,12 +56,14 @@ def analyze_plates_to_json(data: Any, config_json: str = "{}", name: str = "phot
     return json.dumps(analyze_plates_bytes(data, json.loads(config_json or "{}"), name))
 
 
-def count_caps_bytes(data: Any, config: Optional[Dict[str, Any]] = None, name: str = "bunch") -> Dict[str, Any]:
-    """One photo of a bunch -> cap counts by size + the photo with every cap circled."""
+def count_caps_bytes(data: Any, config: Optional[Dict[str, Any]] = None, name: str = "bunch", steps: bool = True) -> Dict[str, Any]:
+    """One photo of a bunch -> cap counts by size + the photo with every cap circled
+    (+ ``steps``: one cropped picture per step of the technique, unless ``steps`` is False)."""
     res = count_caps(_as_bytes(data), CapConfig.from_dict(config), name=name)
     out = dict(res.report)
     out["overlay"] = to_data_url(overlay_image(res))
     out["caps"] = [[round(x, 1), round(y, 1), round(r, 1), c] for x, y, r, c in res.caps]
+    out["steps"] = [{"key": k, "src": to_data_url(im)} for k, im in step_images(res)] if steps else []
     return out
 
 

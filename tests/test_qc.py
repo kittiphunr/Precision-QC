@@ -330,3 +330,37 @@ def test_caps_multi_view_never_loses_caps_and_prune_removes_twins():
     caps = [(100.0, 100.0, 20.0, "large"), (101.0, 100.0, 19.0, "large"), (110.0, 100.0, 5.0, "small"), (150.0, 100.0, 20.0, "large")]
     kept = _prune(caps)
     assert len(kept) == 2 and {round(c[0]) for c in kept} == {100, 150}  # the twin and the cap sitting inside it are gone
+
+
+def test_caps_steps_one_cropped_picture_per_step(tmp_path):
+    from PIL import Image
+    from precision_qc.api import count_caps_bytes
+    from precision_qc.caps import STEP_KEYS, count_caps, step_images
+
+    img, _ = bunch_photo(n_big=20, n_small=60, seed=2)
+    res = count_caps(img)
+    steps = step_images(res)
+    assert [k for k, _ in steps] == list(STEP_KEYS)
+    assert len({im.size for _, im in steps}) == 1  # same crop, same size: steps compare side by side
+    w, h = steps[0][1].size
+    assert w <= 520 and w < res.photo.shape[1] and h < res.photo.shape[0]  # cropped to the bunch, not the whole photo
+    assert step_images(count_caps(np.full((200, 200, 3), (30, 70, 190), np.uint8))) == []  # no bunch -> no steps
+
+    out = count_caps_bytes(_png_bytes(img), {}, "b.png")
+    assert [s["key"] for s in out["steps"]] == list(STEP_KEYS) and out["steps"][0]["src"].startswith("data:image/")
+    assert count_caps_bytes(_png_bytes(img), {}, "b.png", steps=False)["steps"] == []
+
+    f = tmp_path / "bunch.png"
+    f.write_bytes(_png_bytes(img))
+    assert cli_main([str(f), "--caps", "--steps", "-o", str(tmp_path / "out")]) == 0
+    files = sorted(p.name for p in (tmp_path / "out" / "bunch_steps").iterdir())
+    assert files[0] == "01_photo.png" and len(files) == len(STEP_KEYS)
+
+
+def _png_bytes(arr):
+    import io
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.fromarray(arr).save(buf, format="PNG")
+    return buf.getvalue()

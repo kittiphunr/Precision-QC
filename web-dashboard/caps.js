@@ -24,6 +24,19 @@ const CAPS_CSS = `
 .caps-n{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
 .caps-sub{margin:4px 0 0;font-size:.95em}
 .caps-meta{margin:0;font-size:.85em;opacity:.75}
+.caps-steps{grid-column:1/-1;border:1px solid rgba(128,128,128,.3);border-radius:12px;padding:0}
+.caps-steps>summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+.caps-steps>summary::-webkit-details-marker{display:none}
+.caps-steps>summary::before{content:"▸";display:inline-block;width:1em;transition:transform .15s}
+.caps-steps[open]>summary::before{transform:rotate(90deg)}
+.caps-steps>summary small{font-weight:400;opacity:.7}
+.step-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:14px;padding:4px 16px 16px}
+.step-card{margin:0;display:grid;gap:6px;align-content:start;min-width:0}
+.step-card img{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in;background:#000}
+.step-card figcaption{display:grid;gap:2px;font-size:.88em}
+.step-card figcaption b{display:flex;gap:8px;align-items:center}
+.step-n{flex:none;width:1.7em;height:1.7em;border-radius:50%;display:inline-grid;place-items:center;font-size:.85em;font-weight:800;background:var(--np-accent,#4f46e5);color:#fff}
+.step-card figcaption small{opacity:.75;line-height:1.4}
 .caps-actions{display:flex;flex-wrap:wrap;gap:8px}
 #sec-caps .caps-group{margin:12px 0 0;padding:12px 16px 16px;border:1px solid rgba(128,128,128,.3);border-radius:12px;min-width:0}
 #sec-caps .caps-group legend{padding:0 8px;font-size:.78em;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
@@ -180,6 +193,20 @@ function renderCapsCard(c) {
         <button type="button" class="pure-button caps-csv">${esc(t("caps.dlCsv"))}</button>
       </div>
     </div>`;
+  if (d.steps && d.steps.length) {
+    const figs = d.steps.map((st, i) => `
+      <figure class="step-card">
+        <img src="${st.src}" alt="${esc(t(`caps.step.${st.key}`))}" />
+        <figcaption><b><span class="step-n">${i + 1}</span>${esc(t(`caps.step.${st.key}`))}</b><small>${esc(t(`caps.step.${st.key}.d`))}</small></figcaption>
+      </figure>`).join("");
+    c.el.insertAdjacentHTML("beforeend", `
+      <details class="caps-steps"${c.stepsOpen ? " open" : ""}>
+        <summary>${esc(t("caps.steps.title"))}<small>${esc(t("caps.steps.hint"))}</small></summary>
+        <div class="step-grid">${figs}</div>
+      </details>`);
+    $(".caps-steps", c.el).addEventListener("toggle", (e) => { c.stepsOpen = e.target.open; });
+    c.el.querySelectorAll(".step-card img").forEach((im) => im.addEventListener("click", () => lightbox(im.src)));
+  }
   $(".caps-img", c.el).addEventListener("click", (e) => lightbox(e.target.src));
   $(".caps-png", c.el).addEventListener("click", async () => {
     download(`${stem(c.file.name)}_caps.jpg`, await (await fetch(d.overlay)).blob());

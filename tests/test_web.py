@@ -1,9 +1,11 @@
 """Static checks for the web editions: translations stay complete, the Dashboard's
 About/credits dialog is wired to real keys, and the credits match THIRD-PARTY-NOTICES.md."""
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 I18N = (ROOT / "web" / "i18n.js").read_text(encoding="utf-8")
 
 
@@ -82,3 +84,12 @@ def test_caps_settings_labels_have_hints():
     assert len(fields) >= 6
     for k in fields:
         assert k in keys and f"{k}.h" in keys, k
+
+
+def test_every_counting_step_has_a_translated_title_and_description():
+    from precision_qc.caps import STEP_KEYS
+
+    keys = keys_by_lang()
+    for lang, ks in keys.items():
+        for step in STEP_KEYS:
+            assert f"caps.step.{step}" in ks and f"caps.step.{step}.d" in ks, (lang, step)
