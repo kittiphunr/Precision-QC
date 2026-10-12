@@ -238,6 +238,13 @@ const BATCH_CSS = `
 .batch-table tr[data-item]:hover{background:rgba(128,128,128,.12)}
 .batch-svg{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in}
 .batch-svg text{paint-order:stroke;stroke:#fff;stroke-linejoin:round;font-family:system-ui,sans-serif;font-weight:700}
+.batch-idcell{min-width:270px}
+.batch-strips{display:grid;gap:4px;margin-bottom:6px;max-width:300px}
+.batch-strip{display:block;width:100%;height:auto;background:#fff;border:1px solid rgba(128,128,128,.4);border-radius:4px;cursor:zoom-in}
+.batch-strips.rot .batch-strip,.lightbox .rot{transform:rotate(180deg)}
+.batch-rot{font-size:.8em;padding:.2em .7em;margin-bottom:6px}
+.batch-lb{display:grid;gap:10px;justify-items:center;cursor:default}
+.batch-lb img.batch-strip{width:min(94vw,1100px);max-width:none;cursor:default}
 .batch-id{width:100%;min-width:9em;box-sizing:border-box;padding:6px 8px;border:1px solid rgba(128,128,128,.5);border-radius:6px;font:inherit;background:transparent;color:inherit}
 .rank-badge{display:inline-block;min-width:1.9em;text-align:center;padding:1px 9px;border-radius:999px;font-weight:700;font-size:.85em;background:rgba(128,128,128,.25);white-space:nowrap}
 .rank-badge.r1{background:#f5c542;color:#3b2d00}
@@ -326,7 +333,13 @@ function renderBatch(b) {
       <tr data-item="${it.id}">
         <td><span class="rank-badge r${r.rank}">${r.rank}</span></td>
         <td>#${r.plate}</td>
-        <td><input type="text" class="batch-id" maxlength="60" value="${esc(it.label || "")}" placeholder="${esc(t("batch.ph"))}" aria-label="${esc(`${t("batch.th.label")} #${r.plate}`)}" /></td>
+        <td class="batch-idcell">
+          <div class="batch-strips${it.rot ? " rot" : ""}">
+            <img class="batch-strip" src="${r.strips.top}" alt="${esc(t("batch.strip.top"))}" title="${esc(t("batch.strip.top"))}" />
+            <img class="batch-strip" src="${r.strips.bottom}" alt="${esc(t("batch.strip.bottom"))}" title="${esc(t("batch.strip.bottom"))}" />
+          </div>
+          <button type="button" class="pure-button batch-rot">↻ ${esc(t("batch.rot"))}</button>
+          <input type="text" class="batch-id" maxlength="60" value="${esc(it.label || "")}" placeholder="${esc(t("batch.ph"))}" aria-label="${esc(`${t("batch.th.label")} #${r.plate}`)}" /></td>
         <td><span class="status ${r.passed ? "pass" : "fail"}">${t(r.passed ? "tile.ok" : "tile.ng")}</span></td>
         <td class="num">${fmt(r.score)}</td>
         <td>${r.grade} · ${t(`grade.${r.grade}`)}</td>
@@ -365,6 +378,23 @@ function renderBatch(b) {
     const it = b.items.find((x) => x.id === Number(tr.dataset.item));
     const input = $(".batch-id", tr);
     input.addEventListener("click", (e) => e.stopPropagation());
+    const strips = $(".batch-strips", tr);
+    $(".batch-rot", tr).addEventListener("click", (e) => {
+      e.stopPropagation();
+      it.rot = !it.rot;
+      strips.classList.toggle("rot", it.rot);
+    });
+    strips.querySelectorAll("img").forEach((img) => img.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const box = document.createElement("div");
+      box.className = "lightbox";
+      box.innerHTML = `<div class="batch-lb"><img class="batch-strip${it.rot ? " rot" : ""}" src="${img.src}" alt="" /><button type="button" class="pure-button">↻ ${esc(t("batch.rot"))}</button></div>`;
+      const big = $("img", box);
+      $("button", box).addEventListener("click", (ev) => { ev.stopPropagation(); it.rot = !it.rot; big.classList.toggle("rot", it.rot); strips.classList.toggle("rot", it.rot); });
+      big.addEventListener("click", (ev) => ev.stopPropagation());
+      box.addEventListener("click", () => box.remove());
+      document.body.appendChild(box);
+    }));
     input.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
