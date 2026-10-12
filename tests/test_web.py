@@ -49,3 +49,20 @@ def test_dashboard_credits_are_translated_and_listed_in_notices():
 def test_dashboard_assets_exist():
     for f in ("img/mcu-logo.png", "img/developer.jpg", "ui-dash.js"):
         assert (ROOT / "web-dashboard" / f).is_file(), f
+
+
+def test_numpad_is_wired_and_translated():
+    js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    assert "function initNumpad()" in js and "initNumpad();" in js
+    used = set(re.findall(r'\bt\("(np\.[a-z]+)"', js))
+    assert used == {"np.ok", "np.cancel", "np.range"}
+    assert used <= keys_by_lang()["th"]
+
+
+def test_caps_settings_labels_have_hints():
+    js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    keys = keys_by_lang()["th"]
+    fields = re.findall(r'data-i18n="(caps\.f\.[a-z_]+)"', js)
+    assert len(fields) >= 6
+    for k in fields:
+        assert k in keys and f"{k}.h" in keys, k
