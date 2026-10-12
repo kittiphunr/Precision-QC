@@ -13,20 +13,45 @@ const CAPS_CSS = `
 #sec-caps .opt>form{padding:4px 16px 16px}
 #sec-caps .form-actions{margin-top:14px}
 #caps-results{display:grid;gap:16px;margin-top:14px}
-.caps-card{border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:14px;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
-.caps-card img.caps-img{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in}
-.caps-info{display:grid;gap:12px;min-width:0}
-.caps-info h3{margin:0;font-size:1.05em;overflow-wrap:anywhere}
-.caps-total{font-size:2.6em;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-.caps-total small{font-size:.35em;font-weight:600;opacity:.7;margin-left:.3em}
-.caps-split{display:grid;gap:8px}
-.caps-row{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center}
-.caps-dot{width:14px;height:14px;border-radius:50%;border:3px solid;box-sizing:border-box}
-.caps-bar-track{height:8px;border-radius:4px;background:rgba(128,128,128,.2);overflow:hidden;grid-column:2}
-.caps-bar-fill{height:100%}
-.caps-n{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.caps-sub{margin:4px 0 0;font-size:.95em}
-.caps-meta{margin:0;font-size:.85em;opacity:.75}
+.caps-card{border:1px solid rgba(128,128,128,.35);border-radius:14px;padding:16px;display:grid;gap:16px 24px;grid-template-columns:minmax(220px,360px) minmax(0,1fr);align-items:start}
+@media (max-width:760px){.caps-card{grid-template-columns:minmax(0,1fr)}}
+.caps-head{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.caps-head h3{margin:0;font-size:1.05em;overflow-wrap:anywhere}
+.caps-actions{display:flex;flex-wrap:wrap;gap:8px}
+.caps-photo{margin:0;min-width:0}
+.caps-photo img{width:100%;height:auto;display:block;border-radius:10px;cursor:zoom-in}
+.caps-zoom{display:block;margin-top:6px;font-size:.78em;opacity:.65;text-align:center}
+.caps-main{display:grid;gap:16px;min-width:0;container-type:inline-size}
+.caps-kpis{display:grid;grid-template-columns:minmax(150px,1.5fr) repeat(3,minmax(0,1fr));gap:10px}
+@container (max-width:600px){.caps-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.caps-kpi.total{grid-column:1/-1}}
+@container (max-width:360px){.caps-kpis{grid-template-columns:minmax(0,1fr)}.caps-kpi:not(.total){grid-template-columns:auto 1fr;gap:2px 12px;align-items:center}}
+.caps-kpi{border:1px solid rgba(128,128,128,.3);border-radius:12px;padding:10px 12px;display:grid;gap:3px;align-content:start;min-width:0;background:rgba(128,128,128,.07)}
+.caps-kpi b{font-size:1.45em;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.caps-kpi b small{font-size:.5em;font-weight:600;opacity:.7;margin-left:.3em}
+.caps-kpi>span{font-size:.78em;opacity:.7;line-height:1.3}
+.caps-kpi.total{background:rgba(128,128,128,.14)}
+.caps-kpi.total b{font-size:2.5em}
+.caps-table{display:grid;border:1px solid rgba(128,128,128,.3);border-radius:12px;overflow:hidden}
+.caps-tr{display:grid;grid-template-columns:minmax(130px,1.4fr) minmax(54px,.6fr) minmax(90px,1.2fr) minmax(90px,1.2fr);gap:8px 14px;align-items:center;padding:9px 14px;border-top:1px solid rgba(128,128,128,.2)}
+.caps-tr:first-child{border-top:0}
+.caps-tr.th{font-size:.72em;font-weight:700;text-transform:uppercase;letter-spacing:.03em;opacity:.75;background:rgba(128,128,128,.1)}
+.caps-tr.foot{background:rgba(128,128,128,.08);font-weight:700}
+.caps-tr .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.caps-type{display:flex;gap:8px;align-items:center;font-weight:600;min-width:0}
+.caps-cell{display:grid;gap:4px;font-variant-numeric:tabular-nums}
+.caps-cell>b{font-weight:700}
+.caps-cell>small{font-size:.75em;font-weight:500;opacity:.7}
+@container (max-width:560px){.caps-tr{grid-template-columns:minmax(110px,1.3fr) minmax(46px,.6fr) minmax(80px,1fr)}.caps-tr .share{display:none}}
+.caps-dot{flex:none;width:14px;height:14px;border-radius:50%;border:3px solid;box-sizing:border-box}
+.caps-bar-track{height:6px;border-radius:3px;background:rgba(128,128,128,.22);overflow:hidden}
+.caps-bar-fill{display:block;height:100%}
+.caps-compo h4{margin:0 0 8px;font-size:.9em}
+.caps-stack{display:flex;height:16px;border-radius:8px;overflow:hidden;background:rgba(128,128,128,.22)}
+.caps-stack>span{display:block;height:100%}
+.caps-legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.82em;margin-top:8px}
+.caps-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.caps-legend b{font-variant-numeric:tabular-nums}
+.caps-note{margin:0;font-size:.82em;opacity:.72;line-height:1.55}
 .caps-steps{grid-column:1/-1;border:1px solid rgba(128,128,128,.3);border-radius:12px;padding:0}
 .caps-steps>summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
 .caps-steps>summary::-webkit-details-marker{display:none}
@@ -59,7 +84,6 @@ const CAPS_CSS = `
 `;
 const CAP_COLORS = { small: "#50dc5a", medium: "#283ce6", large: "#eb3228", hidden: "#ffaa00" };
 const CAP_CLASSES = ["small", "medium", "large", "hidden"];
-const CAP_AREA_ROWS = [["small", "caps.small"], ["medium", "caps.medium"], ["large", "caps.large"], ["hidden", "caps.hiddenArea"], ["gaps", "caps.gaps"]];
 let capsList = []; // { file, data }
 
 function initCapsUI() {
@@ -216,37 +240,54 @@ function renderCapsSamples(names) {
   });
 }
 
+const CAP_STACK_COLORS = { visible: "#6d7cff", hidden: CAP_COLORS.hidden, gaps: "rgba(128,128,128,.6)" };
+
 function renderCapsCard(c) {
   const d = c.data;
-  const rows = CAP_CLASSES.map((k) => `
-    <div class="caps-row">
-      <span class="caps-dot" style="border-color:${CAP_COLORS[k]}"></span><b>${esc(t(`caps.${k}`))}</b>
-      <span class="caps-n">${d.counts[k]} <span class="muted">(${fmt(d.percent[k])}%)</span></span>
-      <span class="caps-bar-track"><span class="caps-bar-fill" style="display:block;width:${d.percent[k]}%;background:${CAP_COLORS[k]}"></span></span>
-    </div>`).join("");
   const a = d.area_percent;
-  const areaRows = CAP_AREA_ROWS.map(([k, label]) => `
-    <div class="caps-row">
-      <span class="caps-dot" style="border-color:${CAP_COLORS[k] || "#8a8f98"}"></span><span>${esc(t(label))}</span>
-      <span class="caps-n">${fmt(a[k])}%</span>
-      <span class="caps-bar-track"><span class="caps-bar-fill" style="display:block;width:${Math.min(100, a[k])}%;background:${CAP_COLORS[k] || "#8a8f98"}"></span></span>
+  const areaOf = { small: a.small, medium: a.medium, large: a.large, hidden: a.hidden };
+  const bar = (v, color) => `<span class="caps-bar-track"><span class="caps-bar-fill" style="width:${Math.min(100, v)}%;background:${color}"></span></span>`;
+  const rows = CAP_CLASSES.map((k) => `
+    <div class="caps-tr">
+      <span class="caps-type"><span class="caps-dot" style="border-color:${CAP_COLORS[k]}"></span>${esc(t(`caps.${k}`))}</span>
+      <span class="num">${d.counts[k]}</span>
+      <span class="caps-cell share"><b>${fmt(d.percent[k])}%</b>${bar(d.percent[k], CAP_COLORS[k])}</span>
+      <span class="caps-cell"><b>${fmt(areaOf[k])}%</b>${bar(areaOf[k], CAP_COLORS[k])}</span>
     </div>`).join("");
+  const legend = [["visible", "caps.areaVisibleShort"], ["hidden", "caps.hiddenArea"], ["gaps", "caps.gaps"]]
+    .map(([k, label]) => `<span><i style="background:${CAP_STACK_COLORS[k]}"></i>${esc(t(label))} <b>${fmt(a[k])}%</b></span>`).join("");
+  const stack = ["visible", "hidden", "gaps"].map((k) => `<span style="width:${a[k]}%;background:${CAP_STACK_COLORS[k]}"></span>`).join("");
   c.el.innerHTML = `
-    <img class="caps-img" src="${d.overlay}" alt="${esc(t("caps.alt"))}" />
-    <div class="caps-info">
+    <header class="caps-head">
       <h3>${esc(c.file.name)}</h3>
-      <div class="caps-total">${d.total}<small>${esc(t("caps.unit"))}</small></div>
-      <div class="caps-split">${rows}</div>
-      <h4 class="caps-sub">${esc(t("caps.areaTitle"))}</h4>
-      <div class="caps-split">${areaRows}</div>
-      <p class="caps-meta">${esc(t("caps.areaNote", { v: fmt(a.visible), a: fmt(d.bunch_area_pct, 0) }))}</p>
-      <p class="caps-meta">${esc(t("caps.meta", { d: fmt(d.median_diameter_px, 0), a: fmt(d.bunch_area_pct, 0) }))}</p>
-      <p class="caps-meta">${esc(t("caps.note"))}</p>
       <div class="caps-actions">
         <button type="button" class="pure-button pure-button-primary caps-pdf">${esc(t("btn.pdfOne"))}</button>
         <button type="button" class="pure-button caps-png">${esc(t("caps.dlPng"))}</button>
         <button type="button" class="pure-button caps-csv">${esc(t("caps.dlCsv"))}</button>
       </div>
+    </header>
+    <figure class="caps-photo">
+      <img class="caps-img" src="${d.overlay}" alt="${esc(t("caps.alt"))}" />
+      <figcaption class="caps-zoom">${esc(t("caps.zoomHint"))}</figcaption>
+    </figure>
+    <div class="caps-main">
+      <div class="caps-kpis">
+        <div class="caps-kpi total"><b>${d.total}<small>${esc(t("caps.unit"))}</small></b><span>${esc(t("r.cap.rowTotal"))}</span></div>
+        <div class="caps-kpi"><b>${fmt(d.median_diameter_px, 0)}<small>px</small></b><span>${esc(t("r.cap.rowMedian"))}</span></div>
+        <div class="caps-kpi"><b>${fmt(d.bunch_area_pct, 0)}<small>%</small></b><span>${esc(t("r.cap.rowBunchArea"))}</span></div>
+        <div class="caps-kpi"><b>${fmt(d.caps_per_1000px2, 2)}</b><span>${esc(t("r.cap.rowDensity"))} (${esc(t("r.cap.unitDensity"))})</span></div>
+      </div>
+      <div class="caps-table" role="table">
+        <div class="caps-tr th" role="row"><span>${esc(t("caps.th.type"))}</span><span class="num">${esc(t("caps.th.count"))}</span><span class="share">${esc(t("caps.th.share"))}</span><span>${esc(t("caps.th.area"))}</span></div>
+        ${rows}
+        <div class="caps-tr foot" role="row"><span>${esc(t("caps.total"))}</span><span class="num">${d.total}</span><span class="share">100%</span><span class="caps-cell"><b>${fmt(a.visible)}%</b><small>${esc(t("caps.areaVisibleShort"))}</small></span></div>
+      </div>
+      <div class="caps-compo">
+        <h4>${esc(t("caps.compo"))}</h4>
+        <div class="caps-stack" role="img" aria-label="${esc(t("caps.compo"))}">${stack}</div>
+        <div class="caps-legend">${legend}</div>
+      </div>
+      <p class="caps-note">${esc(t("caps.areaNote", { v: fmt(a.visible) }))} ${esc(t("caps.note"))}</p>
     </div>`;
   if (d.steps && d.steps.length) {
     const figs = d.steps.map((st, i) => `

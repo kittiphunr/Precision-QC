@@ -157,3 +157,14 @@ def test_cap_page_input_area_matches_the_dish_page_style():
     for ev in ("dragenter", "dragover", "dragleave", "drop"):
         assert f'"{ev}"' in caps, ev
     assert "caps.pick" not in caps
+
+
+def test_result_card_layout_uses_its_own_width_and_has_all_parts():
+    caps = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
+    for part in ("caps-head", "caps-photo", "caps-kpis", "caps-table", "caps-stack", "caps-legend", "caps-note", "caps-steps"):
+        assert part in caps, part
+    assert "container-type:inline-size" in caps and "@container" in caps  # table / KPI layout follows the card width, not the screen
+    keys = keys_by_lang()
+    for lang, ks in keys.items():
+        assert {"caps.th.type", "caps.th.count", "caps.th.share", "caps.th.area", "caps.total", "caps.areaVisibleShort", "caps.compo", "caps.zoomHint"} <= ks, lang
+        assert "caps.meta" not in ks, lang  # replaced by the KPI tiles
