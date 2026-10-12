@@ -332,7 +332,9 @@ def _r(x: float, nd: int = 1) -> float:
 # --------------------------------------------------------------------------- #
 
 
-def analyze(src: Any, config: Optional[QCConfig] = None, name: str = "sample") -> Analysis:
+def analyze(src: Any, config: Optional[QCConfig] = None, name: str = "sample", dish_hint=None) -> Analysis:
+    """Analyse one dish. ``dish_hint`` = (cx, cy, radius, confidence) as fractions of the
+    image (radius relative to the longest side) skips dish detection; used for batch photos."""
     cfg = config or QCConfig()
     rgb8 = load_image(src, cfg.work_size)
     rgb = rgb8.astype(np.float32)
@@ -340,7 +342,11 @@ def analyze(src: Any, config: Optional[QCConfig] = None, name: str = "sample") -
     gray = rgb @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
 
     # 1) dish + scale --------------------------------------------------------
-    dcx, dcy, r_dish, dish_conf = detect_dish(gray)
+    if dish_hint is not None:
+        dcx, dcy = dish_hint[0] * W, dish_hint[1] * H
+        r_dish, dish_conf = dish_hint[2] * max(W, H), dish_hint[3]
+    else:
+        dcx, dcy, r_dish, dish_conf = detect_dish(gray)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     r_in = 0.92 * r_dish  # stay inside the plastic wall
     dish = np.hypot(xx - dcx, yy - dcy) <= r_in
