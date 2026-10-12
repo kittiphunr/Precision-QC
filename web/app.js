@@ -150,6 +150,7 @@ async function boot() {
 function readForm(form, numeric) {
   const out = {};
   for (const input of form.querySelectorAll("input[name]")) {
+    if (input.type === "checkbox") { out[input.name] = numeric ? (input.checked ? 1 : 0) : input.checked; continue; }
     out[input.name] = numeric ? (input.value === "" ? null : Number(input.value)) : input.value.trim();
   }
   return out;
@@ -159,7 +160,10 @@ function loadForm(form, key, base = {}) {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(key) || "{}"); } catch (_) { /* storage unavailable */ }
   const data = { ...base, ...saved };
-  for (const input of form.querySelectorAll("input[name]")) input.value = data[input.name] ?? "";
+  for (const input of form.querySelectorAll("input[name]")) {
+    if (input.type === "checkbox") input.checked = Number(data[input.name]) === 1 || data[input.name] === true;
+    else input.value = data[input.name] ?? "";
+  }
 }
 
 function persist(form, key, numeric) {
@@ -473,7 +477,8 @@ const CAPS_CSS = `
 #sec-caps .caps-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 #sec-caps .caps-bar .muted{margin:0}
 #sec-caps .opt{height:auto}
-#sec-caps .opt>form{padding:14px 16px 16px}
+#sec-caps .opt>form{padding:4px 16px 16px}
+#sec-caps .form-actions{margin-top:14px}
 #caps-results{display:grid;gap:16px;margin-top:14px}
 .caps-card{border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:14px;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
 .caps-card img.caps-img{width:100%;height:auto;display:block;border-radius:8px;cursor:zoom-in}
@@ -490,7 +495,21 @@ const CAPS_CSS = `
 .caps-sub{margin:4px 0 0;font-size:.95em}
 .caps-meta{margin:0;font-size:.85em;opacity:.75}
 .caps-actions{display:flex;flex-wrap:wrap;gap:8px}
-.caps-set{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+#sec-caps .caps-group{margin:12px 0 0;padding:12px 16px 16px;border:1px solid rgba(128,128,128,.3);border-radius:12px;min-width:0}
+#sec-caps .caps-group legend{padding:0 8px;font-size:.78em;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
+#sec-caps .caps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px 20px}
+#sec-caps .caps-field{display:grid;grid-template-rows:1fr auto;gap:8px;min-width:0}
+#sec-caps .caps-field label{display:flex;flex-direction:column;gap:2px;margin:0;font-size:inherit}
+#sec-caps .caps-field label b{font-size:.95em;font-weight:700}
+#sec-caps .caps-field label small{font-size:.8em;font-weight:400;opacity:.7;line-height:1.35}
+#sec-caps .caps-field input[type=number]{width:100%;box-sizing:border-box;margin:0;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;cursor:pointer}
+#sec-caps .caps-switch{position:relative;display:inline-block;width:52px;height:30px;align-self:end}
+#sec-caps .caps-switch input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;z-index:1}
+#sec-caps .caps-slider{position:absolute;inset:0;border-radius:999px;background:rgba(128,128,128,.4);transition:background .15s}
+#sec-caps .caps-slider::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .15s}
+#sec-caps .caps-switch input:checked+.caps-slider{background:var(--np-accent,#4f46e5)}
+#sec-caps .caps-switch input:checked+.caps-slider::after{transform:translateX(22px)}
+#sec-caps .caps-switch input:focus-visible+.caps-slider{outline:2px solid var(--np-accent,#4f46e5);outline-offset:2px}
 `;
 const CAP_COLORS = { small: "#50dc5a", medium: "#283ce6", large: "#eb3228", hidden: "#ffaa00" };
 const CAP_CLASSES = ["small", "medium", "large", "hidden"];
@@ -518,14 +537,40 @@ function initCapsUI() {
     <details class="opt">
       <summary><span class="opt-title" data-i18n="caps.cfg"></span><span class="opt-hint" data-i18n="caps.cfgHint"></span></summary>
       <form id="caps-cfg" class="pure-form pure-form-stacked" onsubmit="return false">
-        <div class="caps-set">
-          <label><span data-i18n="caps.f.contrast"></span><input name="contrast" type="number" step="0.5" min="-10" max="20" /></label>
-          <label><span data-i18n="caps.f.find_hidden"></span><input name="find_hidden" type="number" step="1" min="0" max="1" /></label>
-          <label><span data-i18n="caps.f.hidden_sat"></span><input name="hidden_sat" type="number" step="0.02" min="0.05" max="0.5" /></label>
-          <label><span data-i18n="caps.f.shadow_lift"></span><input name="shadow_lift" type="number" step="0.05" min="0.2" max="1" /></label>
-          <label><span data-i18n="caps.f.small_below"></span><input name="small_below" type="number" step="0.05" min="0.3" max="1" /></label>
-          <label><span data-i18n="caps.f.large_above"></span><input name="large_above" type="number" step="0.05" min="1" max="3" /></label>
-        </div>
+        <fieldset class="caps-group">
+          <legend data-i18n="caps.g.split"></legend>
+          <div class="caps-grid">
+            <div class="caps-field">
+              <label for="caps-contrast"><b data-i18n="caps.f.contrast"></b><small data-i18n="caps.f.contrast.h"></small></label>
+              <input id="caps-contrast" name="contrast" type="number" step="0.5" min="-10" max="20" />
+            </div>
+            <div class="caps-field">
+              <label for="caps-small_below"><b data-i18n="caps.f.small_below"></b><small data-i18n="caps.f.small_below.h"></small></label>
+              <input id="caps-small_below" name="small_below" type="number" step="0.05" min="0.3" max="1" />
+            </div>
+            <div class="caps-field">
+              <label for="caps-large_above"><b data-i18n="caps.f.large_above"></b><small data-i18n="caps.f.large_above.h"></small></label>
+              <input id="caps-large_above" name="large_above" type="number" step="0.05" min="1" max="3" />
+            </div>
+          </div>
+        </fieldset>
+        <fieldset class="caps-group">
+          <legend data-i18n="caps.g.hidden"></legend>
+          <div class="caps-grid">
+            <div class="caps-field">
+              <label for="caps-find_hidden"><b data-i18n="caps.f.find_hidden"></b><small data-i18n="caps.f.find_hidden.h"></small></label>
+              <span class="caps-switch"><input id="caps-find_hidden" name="find_hidden" type="checkbox" /><span class="caps-slider" aria-hidden="true"></span></span>
+            </div>
+            <div class="caps-field">
+              <label for="caps-hidden_sat"><b data-i18n="caps.f.hidden_sat"></b><small data-i18n="caps.f.hidden_sat.h"></small></label>
+              <input id="caps-hidden_sat" name="hidden_sat" type="number" step="0.02" min="0.05" max="0.5" />
+            </div>
+            <div class="caps-field">
+              <label for="caps-shadow_lift"><b data-i18n="caps.f.shadow_lift"></b><small data-i18n="caps.f.shadow_lift.h"></small></label>
+              <input id="caps-shadow_lift" name="shadow_lift" type="number" step="0.05" min="0.2" max="1" />
+            </div>
+          </div>
+        </fieldset>
         <div class="form-actions">
           <button type="button" id="caps-reset" class="pure-button" data-i18n="btn.reset"></button>
           <button type="button" id="caps-rerun" class="pure-button pure-button-primary" disabled data-i18n="btn.rerun"></button>
@@ -634,6 +679,189 @@ async function runCaps(files) {
     }
   }
 }
+
+/* ------------------------------------------------------------------ numpad
+ * On-screen number pad for every <input type="number"> (gloved hands / tablets
+ * in the lab). Tapping a field opens it; keys edit the field live, and the
+ * physical keyboard still works (the OS keyboard is suppressed with
+ * inputmode="none"). OK / tapping outside keeps the value (clamped to the
+ * field's min/max), Cancel restores it. */
+const NUMPAD_CSS = `
+.np{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:90;width:min(340px,calc(100vw - 24px));box-sizing:border-box;padding:12px;border-radius:16px;border:1px solid rgba(128,128,128,.45);background:var(--np-bg,#fff);color:var(--np-fg,#111);box-shadow:0 14px 44px rgba(0,0,0,.4);display:grid;gap:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.np[hidden]{display:none}
+.np.anchored{bottom:auto;transform:none}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.np-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
+.np-title{font-weight:700;font-size:.9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.np-range{font-size:.78em;opacity:.65;white-space:nowrap}
+.np-display{font-size:2em;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;padding:6px 12px;border-radius:10px;background:rgba(128,128,128,.14);min-height:1.4em;line-height:1.4;overflow:hidden}
+.np-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.np-key{font:inherit;font-size:1.35em;font-weight:700;height:54px;border-radius:12px;border:1px solid rgba(128,128,128,.4);background:rgba(128,128,128,.16);color:inherit;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.np-key:active{background:rgba(128,128,128,.4)}
+.np-key:disabled{opacity:.3;cursor:default}
+.np-key.fn{font-size:1em;background:rgba(128,128,128,.08)}
+.np-key.step{font-size:.95em}
+.np-key.ok{background:var(--np-accent,#4f46e5);border-color:transparent;color:#fff;grid-column:span 2}
+.np-key.cancel{grid-column:span 2;font-size:1em}
+`;
+
+function initNumpad() {
+  const style = document.createElement("style");
+  style.textContent = NUMPAD_CSS;
+  document.head.appendChild(style);
+  const pad = document.createElement("div");
+  pad.className = "np";
+  pad.hidden = true;
+  pad.setAttribute("role", "dialog");
+  const key = (txt, act, cls = "") => `<button type="button" class="np-key ${cls}" data-k="${act}">${txt}</button>`;
+  pad.innerHTML = `
+    <div class="np-head"><span class="np-title"></span><span class="np-range"></span></div>
+    <div class="np-display" aria-live="polite"></div>
+    <div class="np-keys">
+      ${key("7", "7")}${key("8", "8")}${key("9", "9")}${key("⌫", "bs", "fn")}
+      ${key("4", "4")}${key("5", "5")}${key("6", "6")}${key("C", "clear", "fn")}
+      ${key("1", "1")}${key("2", "2")}${key("3", "3")}${key("−", "dec", "step")}
+      ${key("±", "neg", "fn")}${key("0", "0")}${key(".", ".")}${key("+", "inc", "step")}
+      ${key("", "cancel", "cancel fn")}${key("", "ok", "ok")}
+    </div>`;
+  document.body.appendChild(pad);
+  const $k = (k) => pad.querySelector(`[data-k="${k}"]`);
+  let cur = null, orig = "", buf = "", fresh = false, savedPad = "";
+
+  const attr = (n) => (cur && cur.getAttribute(n) !== null && cur.getAttribute(n) !== "" ? Number(cur.getAttribute(n)) : null);
+  const decimals = (x) => (String(x).split(".")[1] || "").length;
+  const labelOf = (inp) => {
+    const l = (inp.id && document.querySelector(`label[for="${inp.id}"]`)) || inp.closest("label");
+    const b = l && (l.querySelector("b, span") || l);
+    return (b ? b.textContent : inp.name || "").trim();
+  };
+  const solidBg = (el) => {
+    for (let n = el; n; n = n.parentElement) {
+      const c = getComputedStyle(n).backgroundColor;
+      if (c && !/rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)|transparent/.test(c)) return c;
+    }
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "#161c24" : "#fff";
+  };
+  // wide screens: float the pad right under (or above) the field; narrow ones: bottom sheet
+  const place = () => {
+    if (!cur) return;
+    const r = cur.getBoundingClientRect(), w = pad.offsetWidth, h = pad.offsetHeight, vw = innerWidth, vh = innerHeight;
+    const below = vh - r.bottom - 12 >= h, above = r.top - 12 >= h;
+    if (vw < 640 || !(below || above)) {
+      pad.classList.remove("anchored");
+      pad.style.left = pad.style.top = "";
+      document.body.style.paddingBottom = `${h + 24}px`;
+      return;
+    }
+    document.body.style.paddingBottom = savedPad;
+    pad.classList.add("anchored");
+    pad.style.left = `${Math.max(12, Math.min(r.left + r.width / 2 - w / 2, vw - w - 12))}px`;
+    pad.style.top = `${below ? r.bottom + 8 : r.top - h - 8}px`;
+  };
+  const show = () => {
+    pad.querySelector(".np-display").textContent = buf === "" ? "—" : buf;
+  };
+  const apply = () => {
+    // keep the field valid while typing ("1." / "-" are shown in the pad but stored as "1" / "")
+    cur.value = /^-?\d*\.?\d*$/.test(buf) && !/^-?\.?$/.test(buf) ? buf.replace(/\.$/, "") : "";
+    cur.dispatchEvent(new Event("input", { bubbles: true }));
+    show();
+  };
+  const clamp = (v) => {
+    const mn = attr("min"), mx = attr("max");
+    if (mn !== null && v < mn) v = mn;
+    if (mx !== null && v > mx) v = mx;
+    return v;
+  };
+  const stepBy = (dir) => {
+    const st = attr("step") || 1;
+    const base = buf === "" || buf === "-" ? 0 : Number(buf);
+    const nd = Math.max(decimals(st), decimals(base));
+    buf = String(clamp(Number((base + dir * st).toFixed(nd))));
+    fresh = false;
+    apply();
+  };
+  const close = (commit) => {
+    if (!cur) return;
+    const inp = cur;
+    if (commit) {
+      if (inp.value !== "") {
+        const v = clamp(Number(inp.value));
+        if (String(v) !== inp.value) { inp.value = String(v); inp.dispatchEvent(new Event("input", { bubbles: true })); }
+      }
+    } else if (inp.value !== orig) {
+      inp.value = orig;
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    cur = null;
+    pad.hidden = true;
+    document.body.style.paddingBottom = savedPad;
+    inp.blur();
+  };
+  const open = (inp) => {
+    if (cur === inp) return;
+    if (cur) close(true);
+    cur = inp;
+    orig = buf = inp.value;
+    fresh = true; // the first digit replaces the old value
+    const accent = document.querySelector(".pure-button-primary");
+    pad.style.setProperty("--np-bg", solidBg(inp.closest(".panel") || inp));
+    pad.style.setProperty("--np-fg", getComputedStyle(inp).color);
+    if (accent) pad.style.setProperty("--np-accent", getComputedStyle(accent).backgroundColor);
+    pad.querySelector(".np-title").textContent = labelOf(inp);
+    const mn = attr("min"), mx = attr("max"), st = attr("step") || 1;
+    pad.querySelector(".np-range").textContent = mn !== null && mx !== null ? t("np.range", { min: mn, max: mx }) : "";
+    $k("dec").textContent = `− ${st}`;
+    $k("inc").textContent = `+ ${st}`;
+    $k("cancel").textContent = t("np.cancel");
+    $k("ok").textContent = t("np.ok");
+    $k(".").disabled = Number.isInteger(st) && Number.isInteger(mn ?? 0);
+    $k("neg").disabled = mn !== null && mn >= 0;
+    pad.setAttribute("aria-label", labelOf(inp));
+    show();
+    pad.hidden = false;
+    savedPad = document.body.style.paddingBottom;
+    pad.classList.remove("anchored");
+    inp.scrollIntoView({ block: "center" });
+    place();
+  };
+
+  pad.addEventListener("pointerdown", (e) => e.preventDefault()); // keep focus on the field
+  pad.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-k]");
+    if (!b || !cur) return;
+    const k = b.dataset.k;
+    if (k === "ok") return close(true);
+    if (k === "cancel") return close(false);
+    if (k === "inc" || k === "dec") return stepBy(k === "inc" ? 1 : -1);
+    if (k === "clear") buf = "";
+    else if (k === "bs") buf = fresh ? "" : buf.slice(0, -1);
+    else if (k === "neg") buf = buf.startsWith("-") ? buf.slice(1) : `-${buf}`;
+    else {
+      const base = fresh ? "" : buf;
+      if (k === ".") buf = base.includes(".") ? base : `${base === "" || base === "-" ? `${base}0` : base}.`;
+      else buf = base === "0" ? k : base === "-0" ? `-${k}` : base + k;
+    }
+    fresh = false;
+    apply();
+  });
+  document.addEventListener("focusin", (e) => { if (isNumberInput(e.target)) open(e.target); });
+  document.addEventListener("click", (e) => { if (isNumberInput(e.target)) open(e.target); });
+  document.addEventListener("pointerdown", (e) => {
+    if (cur && !pad.contains(e.target) && e.target !== cur) close(true);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!cur) return;
+    if (e.key === "Enter") { e.preventDefault(); close(true); }
+    else if (e.key === "Escape") { e.preventDefault(); close(false); }
+  });
+  document.addEventListener("input", (e) => { if (e.target === cur && e.isTrusted) { buf = cur.value; fresh = false; show(); } });
+  document.querySelectorAll("input[type=number]").forEach((i) => i.setAttribute("inputmode", "none"));
+  window.addEventListener("resize", place);
+  window.addEventListener("scroll", place, { passive: true, capture: true });
+}
+const isNumberInput = (n) => n instanceof HTMLInputElement && n.type === "number" && !n.disabled && !n.readOnly;
 
 /* ------------------------------------------------------------------- camera
  * Optional: only wires up when the edition's page includes the camera markup
@@ -1179,6 +1407,7 @@ async function downloadPdf(items) {
 
 initBatchUI();
 initCapsUI();
+initNumpad();
 applyLang(lang);
 initCamera();
 boot();
