@@ -46,6 +46,26 @@
     document.addEventListener("click", closePanel);
   }
 
+  /* ---------------------------------------------------------- step strip
+   * 1 upload -> 2 review -> 3 report: the badge follows the work. With no results the
+   * first step is active; once something has been analysed step 1 is done and step 2
+   * (review the results) is the active one. */
+  const steps = $$(".stepper li");
+  const totalEl = $("#stat-total");
+  function syncSteps() {
+    const has = Number(totalEl?.textContent || 0) > 0;
+    const state = has ? ["done", "active", "todo"] : ["active", "todo", "todo"];
+    steps.forEach((li, i) => {
+      li.dataset.state = state[i];
+      $(".n", li).textContent = state[i] === "done" ? "✓" : String(i + 1);
+      if (state[i] === "active") li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    });
+  }
+  if (totalEl && steps.length) {
+    new MutationObserver(syncSteps).observe(totalEl, { childList: true, characterData: true, subtree: true });
+    syncSteps();
+  }
+
   /* ------------------------------------------------------------ side menu */
   const root = document.documentElement, sb = $("#sidebar");
   const MIN_KEY = "precision-qc-sbmin";
