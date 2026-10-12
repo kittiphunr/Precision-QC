@@ -1,4 +1,6 @@
 /* Precision QC — "Dashboard" edition — built with standard Tailwind CSS.
+ * Layout and interface follow the Certify Hub guideline (sticky header, display
+ * settings panel, About/credits dialog, centred footer).
  * The whole UI uses Tailwind's default palette (slate / indigo / emerald /
  * rose) and standard utilities via @apply — no custom theme colours or
  * arbitrary values. dark: follows the theme toggle + OS (see tailwind.config).
@@ -48,40 +50,115 @@
   .pure-table td, .pure-table th { @apply border-b border-slate-200 dark:border-slate-800 px-4 py-2.5; }
   .pure-table tbody tr:last-child td { @apply border-b-0; }
 
-  /* app shell */
-  /* 3-column shell: sidebar | content | rail — stacks on < lg */
-  .app { @apply max-w-screen-2xl mx-auto p-4 flex flex-col lg:flex-row gap-4 items-start; }
-  .sidebar { @apply w-full lg:w-64 lg:shrink-0; }
-  .rail { @apply w-full lg:w-96 lg:shrink-0; }
-  .rail { @apply grid gap-4 lg:sticky lg:top-4 self-start min-w-0; }
-  .sidebar { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 lg:sticky lg:top-4 flex flex-col gap-5; }
-  .side-brand { @apply flex gap-3 items-center; }
-  .side-brand .logo { @apply text-white bg-slate-900 dark:bg-slate-700 rounded-xl w-10 h-10 grid place-items-center shrink-0; }
-  .side-brand h1 { @apply m-0 text-base font-bold; }
-  .side-brand p { @apply mt-0.5 mb-0 text-xs text-slate-500 dark:text-slate-400; }
-  .side-group { @apply grid gap-2; }
-  .side-label { @apply text-xs uppercase tracking-wide font-bold text-slate-500 dark:text-slate-400; }
+  /* sidebar — Certify Hub admin style: floating icon rail (hover to expand), drawer on phones */
+  .icon-btn { @apply w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 grid place-items-center shrink-0 cursor-pointer no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-300; }
+  .settings-wrap { @apply relative; }
+  .panel-pop { @apply fixed z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl; left: 262px; bottom: 76px; }
+  .panel-title { @apply m-0 font-bold; }
+  .panel-label { @apply mt-3.5 mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
   .seg { @apply flex bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-0.5 gap-0.5; }
   .seg button { @apply flex-1 bg-transparent text-slate-600 dark:text-slate-300 border-0 rounded-lg m-0 cursor-pointer text-xs font-semibold px-2 py-1.5 inline-flex items-center justify-center gap-1 transition; }
   .seg button:hover { @apply text-slate-900 dark:text-white; }
   .seg button.is-active { @apply bg-indigo-500 text-white; }
-  .side-foot { @apply mt-auto grid gap-3 border-t border-slate-200 dark:border-slate-800 pt-3.5; }
   .engine { @apply inline-flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full; }
   .engine .dot { @apply w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0; }
   .engine.loading .dot { @apply animate-pulse; }
   .engine.ready .dot { @apply bg-emerald-500; }
   .engine.error .dot { @apply bg-rose-500; }
-  .side-foot .credit { @apply text-xs leading-relaxed text-slate-500 dark:text-slate-400 text-left m-0; }
-  .side-foot .credit b { @apply text-slate-600 dark:text-slate-300 font-semibold; }
 
-  /* content + pagebar */
-  .content { @apply flex-1 w-full grid gap-4 min-w-0; }
-  .pagebar { @apply flex items-center justify-between gap-4 px-1.5 py-1; }
-  .page-title { @apply m-0 text-2xl font-extrabold tracking-tight; }
-  .page-sub { @apply mt-1 mb-0 text-sm text-slate-500 dark:text-slate-400; }
-  .icon-btn { @apply w-11 h-11 rounded-full bg-slate-900 dark:bg-slate-700 text-white grid place-items-center shrink-0 no-underline transition hover:brightness-110; }
-  .bento { @apply grid gap-4 min-w-0; }
-  .bento > *, #results > * { @apply min-w-0; }
+
+  :root { --sbw: 246px; }
+  html.sb-min { --sbw: 86px; }
+  .app { @apply min-h-screen; }
+  .app-main { @apply min-w-0 flex flex-col; margin-left: var(--sbw); transition: margin-left .18s ease; }
+  .sb { @apply fixed left-0 top-0 bottom-0 z-40 flex flex-col gap-3 pl-3.5 py-3.5 overflow-x-hidden overflow-y-auto; width: var(--sbw); transition: width .18s ease, transform .2s ease; scrollbar-width: none; overscroll-behavior: contain; }
+  .sb::-webkit-scrollbar { display: none; }
+  html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 246px; @apply bg-slate-100 dark:bg-slate-950 shadow-2xl; }
+  .sb .t { @apply whitespace-nowrap; }
+  .sb-brand { @apply flex items-center gap-3 h-12 no-underline text-slate-900 dark:text-slate-100 whitespace-nowrap; }
+  .badge-logo { @apply w-11 h-11 rounded-full bg-indigo-600 text-white grid place-items-center shrink-0 shadow-lg shadow-indigo-500/30; }
+  .sb-brand b { @apply block text-base leading-tight; }
+  .sb-brand small { @apply block text-xs text-slate-500 dark:text-slate-400 whitespace-normal leading-tight line-clamp-2; }
+  .sb-cap { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2.5 shadow-sm flex flex-col gap-1 overflow-hidden; }
+  .sb-foot { @apply mt-auto; }
+  .sb a, .sb-btn { @apply relative flex items-center gap-3 w-full px-3.5 py-2.5 rounded-2xl text-sm text-slate-600 dark:text-slate-300 no-underline bg-transparent border-0 cursor-pointer text-left transition; }
+  .sb .ic { @apply grid place-items-center shrink-0 text-slate-400; }
+  .sb a:hover, .sb-btn:hover { @apply bg-indigo-50 dark:bg-slate-800 text-slate-900 dark:text-white; }
+  .sb a:hover .ic, .sb-btn:hover .ic { @apply text-indigo-600 dark:text-indigo-300; }
+  .sb a.active { @apply bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/30; }
+  .sb a.active .ic { @apply text-white; }
+  .sb .engine { @apply w-full rounded-2xl border-0 bg-transparent px-3.5 py-2.5 text-sm gap-3; }
+  .sb-collapse .ic { transition: transform .18s; }
+  html.sb-min .sb-collapse .ic { transform: rotate(180deg); }
+  /* collapsed rail: icon-only round buttons */
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-center; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 64px; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-11 h-11 p-0 gap-0 rounded-full justify-center mx-auto; }
+  html.sb-min .sb:not(:hover):not(:focus-within) .t { @apply hidden; }
+  .sb-fab { display: none; }
+  .sb-backdrop { @apply fixed inset-0 z-30 bg-slate-950/45; }
+  .scroll-anchor { @apply scroll-mt-4; }
+  .results-wrap { @apply grid gap-4 min-w-0; }
+  html { @apply motion-safe:scroll-smooth; }
+
+  @media (max-width: 900px) {
+    .app-main { margin-left: 0; }
+    .sb { @apply bg-slate-100 dark:bg-slate-950 p-3.5; width: 272px; transform: translateX(-102%); }
+    .sb.open { transform: none; @apply shadow-2xl; }
+    html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 272px; }
+    .sb-collapse { display: none; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .sb-brand { @apply justify-start; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap { width: 100%; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .sb-cap :is(a, .sb-btn, .engine) { @apply w-full h-auto px-3.5 py-2.5 gap-3 rounded-2xl justify-start m-0; }
+    html.sb-min .sb:not(:hover):not(:focus-within) .t { display: block; }
+    .panel-pop { left: 1rem; right: 1rem; width: auto; bottom: 5rem; }
+    .sb-fab { @apply fixed z-30 left-4 bottom-5 w-12 h-12 rounded-full bg-indigo-600 text-white place-items-center shadow-xl shadow-indigo-500/40 border-0 cursor-pointer; display: grid; }
+    .container { @apply pb-24; }
+  }
+
+  /* page */
+  .container { @apply max-w-6xl mx-auto w-full px-4 py-5 grid gap-4 min-w-0; }
+  .container > *, #results > * { @apply min-w-0; }
+
+  /* 3-step strip (Certify Hub stepper) */
+  .stepper { @apply list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-3 gap-2.5; }
+  .stepper li { @apply flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5; }
+  .stepper li:first-child { @apply bg-indigo-50 dark:bg-indigo-950 border-indigo-300 dark:border-indigo-800; }
+  .stepper .n { @apply w-7 h-7 rounded-full grid place-items-center shrink-0 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-sm font-bold; }
+  .stepper .l { @apply grid min-w-0 text-sm leading-snug; }
+  .stepper .l b { @apply font-semibold; }
+  .stepper .l small { @apply text-xs text-slate-500 dark:text-slate-400; }
+
+  /* footer + About dialog (Certify Hub style) */
+  .site-footer { @apply text-center text-sm text-slate-500 dark:text-slate-400 px-4 pt-2 pb-8 grid gap-1; }
+  .site-footer .credit { @apply m-0 leading-relaxed; }
+  .site-footer .credit b { @apply font-semibold text-slate-600 dark:text-slate-300; }
+  .site-footer .foot-line { @apply m-0; }
+  .site-footer a, .linkbtn { @apply text-indigo-700 dark:text-indigo-300 underline; }
+  .linkbtn { @apply bg-transparent border-0 p-0 cursor-pointer text-sm; }
+  .modal { @apply fixed inset-0 z-50 bg-slate-950/60 p-4 grid place-items-center; }
+  .modal-box { @apply relative w-full max-w-xl max-h-full overflow-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-5; }
+  .modal-x { @apply absolute right-3 top-3; }
+  .about-head { @apply flex items-center gap-3.5 pr-12 mb-1; }
+  .about-head img { @apply w-16 h-16 object-contain shrink-0; }
+  .about-head h2 { @apply m-0 text-xl font-bold; }
+  .about-sec { @apply border-t border-slate-200 dark:border-slate-800 pt-3.5 mt-3.5; }
+  .about-sec h3 { @apply m-0 mb-2 text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300; }
+  .about-sec p { @apply my-1.5 text-sm; }
+  .about-sec a { @apply text-indigo-700 dark:text-indigo-300 underline break-all; }
+  .dev { @apply flex items-center gap-3.5; }
+  .dev-photo { @apply w-24 h-24 rounded-full object-cover shrink-0 border-2 border-indigo-200 dark:border-indigo-800; }
+  .about-sec .dev-name { @apply m-0 text-lg font-bold; }
+  .about-sec .dev-en, .about-sec .dev-role, .about-sec .dev-org { @apply m-0 text-sm text-slate-600 dark:text-slate-300; }
+  .about-sec .dev-tag { @apply mt-1.5 mb-0 inline-block rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-3 py-0.5 text-xs font-semibold; }
+  .dev-contact, .plain { @apply list-none p-0 my-2.5 grid gap-1; }
+  .dev-contact li, .plain li { @apply flex gap-3 text-sm; }
+  .dev-contact li > span, .plain li > span { @apply w-16 shrink-0 text-slate-500 dark:text-slate-400; }
+  .about-list { @apply my-2 pl-5 grid gap-1.5 text-sm list-disc; }
+  .credit-list { @apply text-xs; }
+  .about-sec .about-label { @apply mt-3 mb-1 text-xs font-semibold; }
+  .about-stack { @apply flex flex-wrap gap-1.5; }
+  .chip.gray { @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700; }
 
   /* stat cards */
   .stats { @apply grid grid-cols-1 sm:grid-cols-3 gap-4; }
@@ -99,20 +176,12 @@
   .panel { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5; }
 
   /* hero */
-  .hero { @apply relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl p-6 text-white bg-gradient-to-br from-indigo-500 to-violet-400 shadow-xl shadow-indigo-500/30; }
+  .hero { @apply relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl p-6 sm:p-7 text-white bg-gradient-to-br from-indigo-500 to-violet-400 shadow-xl shadow-indigo-500/30; }
   .hero-text { @apply min-w-0; }
   .hero-badge { @apply inline-block text-xs font-bold uppercase tracking-wide bg-white/20 border border-white/30 px-3 py-1 rounded-full; }
-  .hero h3 { @apply mt-3 mb-0 text-xl font-bold leading-snug max-w-prose; }
+  .hero h2 { @apply mt-3 mb-0 text-xl font-bold leading-snug max-w-prose; }
+  .hero p { @apply mt-1.5 mb-0 text-sm text-indigo-100 max-w-prose; }
   .hero-mark { @apply hidden sm:grid shrink-0 w-14 h-14 place-items-center text-white bg-white/15 border border-white/30 rounded-2xl; }
-
-  /* steps */
-  .steps { @apply list-none p-0 m-0 grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-stretch; }
-  .steps > li { @apply p-0 min-w-0 flex; }
-  .step { @apply flex-1 min-w-0 flex gap-3 items-start bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4; }
-  .step > div { @apply min-w-0 flex-1; }
-  .step .num { @apply w-9 h-9 rounded-lg grid place-items-center shrink-0 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-extrabold text-base; }
-  .step b { @apply block text-sm font-bold; }
-  .step p { @apply mt-1 mb-0 text-sm text-slate-500 dark:text-slate-400; }
 
   /* upload + camera */
   .drop { @apply flex flex-col items-center justify-center gap-1.5 min-h-44 p-6 text-center cursor-pointer border-2 border-dashed border-indigo-300 dark:border-indigo-800 rounded-xl bg-slate-50 dark:bg-slate-800 transition; }
@@ -134,7 +203,7 @@
   .chip.pure-button:hover { @apply bg-indigo-200 dark:bg-indigo-900; }
 
   /* options */
-  .options { @apply grid grid-cols-1 gap-3.5; }
+  .options { @apply grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start; }
   .opt-col { @apply min-w-0; }
   .opt { @apply border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900; }
   .opt > summary { @apply list-none cursor-pointer px-4 py-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5; }

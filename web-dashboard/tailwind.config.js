@@ -4,7 +4,7 @@
  * values. dark: follows the app's theme toggle (html[data-theme]) and the OS
  * setting for "auto", matching the other editions. */
 module.exports = {
-  content: ["./index.html", "./app.js"],
+  content: ["./index.html", "./app.js", "./ui-dash.js"],
   darkMode: ["variant", [
     '&:where([data-theme="dark"], [data-theme="dark"] *)',
     '@media (prefers-color-scheme: dark) { &:where(:not([data-theme="light"], [data-theme="light"] *)) }',

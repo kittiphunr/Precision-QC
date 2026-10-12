@@ -57,6 +57,12 @@ CI จะแจ้งเตือนถ้าโฟลเดอร์ `deploy/` 
 - เวอร์ชัน Dashboard คอมไพล์ CSS จาก `web-dashboard/src.css` เป็น `tw-dash.css` ตอน build (ต้องมี **Node.js/npx**) และไม่พึ่ง Pure.css CDN
 - แก้สไตล์เวอร์ชัน Dashboard ได้ที่ `web-dashboard/src.css` (คลาสคอมโพเนนต์) และ `web-dashboard/tailwind.config.js`
 
+### อินเทอร์เฟซเวอร์ชัน Dashboard (แนวทางเดียวกับ Certify Hub)
+หน้าตาของเวอร์ชัน Dashboard ปรับตามหน้าแอดมินของโครงการ [Certify Hub](https://github.com/kittiphunr/certify-hub): **แถบเมนูด้านข้าง** แบบแคปซูลลอย (โลโก้ · ภาพรวม / อัปโหลด / ตั้งค่าเกณฑ์ / ผลตรวจ · สถานะระบบ · ตั้งค่าการแสดงผล · เกี่ยวกับ/เครดิต · ปุ่มยุบ/ขยาย) — ค่าเริ่มต้นเป็นแถบไอคอน ชี้เมาส์แล้วขยาย กดปุ่มเพื่อปักให้ขยายค้างไว้ (จำค่าไว้) ไฮไลต์เมนูตามหัวข้อที่เลื่อนอ่านอยู่ และบนมือถือเป็นปุ่มลอยเปิดลิ้นชักเมนู
+แผง **ตั้งค่าการแสดงผล** มีภาษา ธีม (สว่าง/มืด/อัตโนมัติ) และขนาดตัวอักษร (เล็ก/ปกติ/ใหญ่) · แถบ 3 ขั้นตอน · ท้ายเว็บมีเครดิตผู้พัฒนา
+หน้าต่าง **เกี่ยวกับ/เครดิต** (3 ภาษา) แสดงข้อมูลผู้พัฒนาและช่องทางติดต่อเหมือน Certify Hub, ข้อมูลโครงการ, **เทคโนโลยีและทรัพยากรที่นำมาใช้พร้อมสัญญาอนุญาต** (รายการเดียวกับ [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)) และ **สิทธิ์และการอ้างอิง** (ลิขสิทธิ์ เครื่องหมายการค้า มาตรฐานที่อ้างอิง ความเป็นส่วนตัว)
+โค้ดส่วนนี้อยู่ใน `web-dashboard/ui-dash.js` (ค่า `CREDITS`) และ `web-dashboard/index.html`
+
 ### ถ่ายภาพจากกล้อง (webcam)
 - **ถ่ายภาพจากกล้อง (webcam):** กดปุ่ม "ถ่ายภาพจากกล้อง" เพื่อเปิดกล้อง เล็งจานเพาะเชื้อให้อยู่กลางภาพ แล้วกด "ถ่ายภาพ" ระบบจะนำภาพเข้าสู่การตรวจทันทีเหมือนการอัปโหลดไฟล์ รองรับการเลือกกล้องเมื่อมีหลายตัว
 - ⚠️ เบราว์เซอร์อนุญาตให้ใช้กล้องเฉพาะบน **HTTPS** (หรือ `localhost`) เท่านั้น และผู้ใช้ต้องกด "อนุญาต" ให้เว็บเข้าถึงกล้อง — บนโฮสต์จริงที่เป็น HTTPS จึงใช้งานได้
@@ -191,7 +197,7 @@ precision_qc/        Python engine
   cli.py             คำสั่ง batch  (python -m precision_qc)
 web/                 หน้าเว็บ (เวอร์ชัน Pure.css) — โหลด Pyodide แล้วเรียก precision_qc.api
   i18n.js            ข้อความ 3 ภาษา (ไทย / English / 中文)
-web-dashboard/       หน้าเว็บ (เวอร์ชัน Dashboard) — ใช้ Tailwind CSS มาตรฐานล้วน (สี slate/indigo/emerald/rose)
+web-dashboard/       หน้าเว็บ (เวอร์ชัน Dashboard — ui-dash.js = แผงตั้งค่า/หน้าต่างเกี่ยวกับ-เครดิต, img/ = ตราและรูปผู้พัฒนา) — ใช้ Tailwind CSS มาตรฐานล้วน (สี slate/indigo/emerald/rose)
   src.css            ต้นทาง Tailwind (คอมไพล์เป็น tw-dash.css ตอน build) — ทุกส่วนเขียนด้วย @apply utility มาตรฐาน
   tailwind.config.js ตั้งค่า dark mode ให้ตามปุ่มสลับธีม/ระบบ (ไม่มีสี/ค่า custom)
 scripts/build_site.py  ประกอบเว็บทั้งสองเวอร์ชัน (Pure.css + Dashboard) + โค้ด Python ลง _site/ (หรือ deploy/)
@@ -209,5 +215,5 @@ tests/               pytest
 **นายกิตติพันธ์ รัตนคร** นักวิชาการคอมพิวเตอร์
 มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย วิทยาเขตแพร่
 
-**Mr. Kittiphun Rattanakorn**, Computer Technical Officer
+**Mr. Kittiphun Ruttanakorn**, Computer Technical Officer
 Mahachulalongkornrajavidyalaya University, Phrae Campus
