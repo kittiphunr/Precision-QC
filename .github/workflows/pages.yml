@@ -1,8 +1,10 @@
 name: Deploy web app to GitHub Pages
 
+# ปิดการรันอัตโนมัติ: repo นี้ยังไม่ได้เปิด GitHub Pages (Settings → Pages → Source: GitHub Actions)
+# จึงล้มที่ขั้น configure-pages ทุกครั้งที่ push เข้า main — เว็บใช้งานจริงอัปโหลดจากโฟลเดอร์ deploy/
+# ถ้าเปิด Pages แล้วอยากให้ deploy อัตโนมัติอีกครั้ง ให้เพิ่ม push: branches: [main] กลับเข้ามา
+# (ยังสั่งรันเองได้จากแท็บ Actions → Run workflow)
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
