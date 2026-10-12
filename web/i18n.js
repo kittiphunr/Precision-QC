@@ -288,7 +288,6 @@ window.I18N = {
     "r.pdfTitleMany": "รายงานผลการตรวจคุณภาพเชื้อรา",
     "caps.title": "นับจำนวนดอกเห็ด (ช่อดอก)",
     "caps.hint": "ถ่ายช่อเห็ดจากด้านบนให้เห็นหน้าช่อชัด ๆ ระบบจะนับดอกทั้งหมดและแบ่งตามขนาด — วงเขียว = เล็ก · วงน้ำเงิน = กลาง · วงแดง = ใหญ่ (เทียบกับดอกขนาดกลางของช่อนั้น) · วงส้ม = ดอกที่ซ่อนอยู่ใต้ดอกอื่น (ประมาณจากส่วนที่โผล่ออกมา)",
-    "caps.pick": "เลือกภาพช่อดอก",
     "caps.sample": "ช่อตัวอย่าง {n}",
     "caps.cfg": "ตั้งค่าการนับดอก",
     "caps.cfgHint": "ปรับความไวและเกณฑ์แบ่งขนาด",
@@ -383,6 +382,7 @@ window.I18N = {
     "r.cap.pdfTitleOne": "รายงานผลการนับดอกเห็ด {no}",
     "r.cap.pdfTitleMany": "รายงานผลการนับดอกเห็ด",
     "caps.camHint": "วางช่อดอกให้เห็นหน้าช่อชัด ๆ จากด้านบน แสงสม่ำเสมอ แล้วกดถ่ายภาพ",
+    "caps.drop.title": "ลากภาพช่อดอกมาวาง หรือคลิกเพื่อเลือก",
   },
 
   en: {
@@ -671,7 +671,6 @@ window.I18N = {
     "r.pdfTitleMany": "Fungal culture QC test reports",
     "caps.title": "Mushroom cap counter (bunch)",
     "caps.hint": "Photograph the bunch from above so its top is in clear view. Every cap is counted and sorted by size — green = small · blue = medium · red = large (relative to the median cap of that bunch) · orange = a cap hidden under others (estimated from the part peeking out).",
-    "caps.pick": "Choose bunch photo",
     "caps.sample": "Bunch sample {n}",
     "caps.cfg": "Cap counting settings",
     "caps.cfgHint": "Tune sensitivity and the size thresholds",
@@ -766,6 +765,7 @@ window.I18N = {
     "r.cap.pdfTitleOne": "Mushroom cap count report {no}",
     "r.cap.pdfTitleMany": "Mushroom cap count report",
     "caps.camHint": "Frame the bunch from above with its top in clear view and even light, then capture",
+    "caps.drop.title": "Drag a bunch photo here, or click to choose",
   },
 
   zh: {
@@ -1054,7 +1054,6 @@ window.I18N = {
     "r.pdfTitleMany": "真菌菌种质量检测报告",
     "caps.title": "菇盖计数（菇束）",
     "caps.hint": "从正上方拍摄菇束，使顶面清晰可见。系统会统计所有菇盖并按大小分类 — 绿圈 = 小 · 蓝圈 = 中 · 红圈 = 大（相对于该菇束的中位菇盖）· 橙圈 = 被遮挡的菇盖（根据露出部分估算）。",
-    "caps.pick": "选择菇束照片",
     "caps.sample": "菇束示例 {n}",
     "caps.cfg": "菇盖计数设置",
     "caps.cfgHint": "调整灵敏度和大小分类阈值",
@@ -1149,5 +1148,6 @@ window.I18N = {
     "r.cap.pdfTitleOne": "菇盖计数报告 {no}",
     "r.cap.pdfTitleMany": "菇盖计数报告",
     "caps.camHint": "从正上方拍摄菇束，使顶面清晰可见、光线均匀，然后点击拍照",
+    "caps.drop.title": "将菇束照片拖到此处，或点击选择",
   },
 };
