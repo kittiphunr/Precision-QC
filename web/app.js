@@ -541,6 +541,10 @@ function initCapsUI() {
           <legend data-i18n="caps.g.split"></legend>
           <div class="caps-grid">
             <div class="caps-field">
+              <label for="caps-multi_view"><b data-i18n="caps.f.multi_view"></b><small data-i18n="caps.f.multi_view.h"></small></label>
+              <span class="caps-switch"><input id="caps-multi_view" name="multi_view" type="checkbox" /><span class="caps-slider" aria-hidden="true"></span></span>
+            </div>
+            <div class="caps-field">
               <label for="caps-contrast"><b data-i18n="caps.f.contrast"></b><small data-i18n="caps.f.contrast.h"></small></label>
               <input id="caps-contrast" name="contrast" type="number" step="0.5" min="-10" max="20" />
             </div>

@@ -324,6 +324,8 @@ window.I18N = {
     "np.ok": "ตกลง",
     "np.cancel": "ยกเลิก",
     "np.range": "ช่วง {min} – {max}",
+    "caps.f.multi_view": "ค้นหาดอกที่หลุดซ้ำหลายมุมสี",
+    "caps.f.multi_view.h": "มองซ้ำด้วยช่อง B / ค่า RGB ต่ำสุด / ยกเงา เพื่อจับดอกเล็กในช่องว่างและดอกในเงา",
   },
 
   en: {
@@ -648,6 +650,8 @@ window.I18N = {
     "np.ok": "OK",
     "np.cancel": "Cancel",
     "np.range": "Range {min} – {max}",
+    "caps.f.multi_view": "Second look in other colour views",
+    "caps.f.multi_view.h": "Re-scan with the blue channel, min-RGB and lifted shadows to catch small caps in gaps and caps in shade",
   },
 
   zh: {
@@ -972,5 +976,7 @@ window.I18N = {
     "np.ok": "确定",
     "np.cancel": "取消",
     "np.range": "范围 {min} – {max}",
+    "caps.f.multi_view": "多色彩视图二次搜索",
+    "caps.f.multi_view.h": "用蓝色通道、RGB 最小值和提亮阴影重新扫描，找出缝隙中的小菇盖和阴影中的菇盖",
   },
 };
