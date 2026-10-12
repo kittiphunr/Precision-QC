@@ -315,58 +315,6 @@ async function runBatchFile(file, cfgJson) {
   renderSummary();
 }
 
-/* ------------------------------------------------------------------- camera
- * Optional: only wires up when the edition's page includes the camera markup
- * (#cam-toggle). Captures a still from a webcam and feeds it into runFiles,
- * exactly like a dropped file. Needs a secure context (HTTPS or localhost). */
-function initCamera() {
-  const toggle = $("#cam-toggle");
-  if (!toggle) return; // edition without the camera UI
-  if (!navigator.mediaDevices?.getUserMedia) { toggle.hidden = true; return; }
-  const panel = $("#cam-panel"), video = $("#cam-video"), canvas = $("#cam-canvas"), select = $("#cam-select");
-  let stream = null;
-
-  function stop() {
-    if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
-    video.srcObject = null;
-  }
-  function close() { stop(); panel.hidden = true; toggle.hidden = false; }
-
-  async function start(deviceId) {
-    stop();
-    const video_c = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "environment" };
-    stream = await navigator.mediaDevices.getUserMedia({ video: video_c, audio: false });
-    video.srcObject = stream;
-    await video.play().catch(() => { /* autoplay quirks */ });
-    if (select) {
-      try {
-        const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
-        select.innerHTML = cams.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || `${t("cam.switch")} ${i + 1}`)}</option>`).join("");
-        if (deviceId) select.value = deviceId;
-        select.hidden = cams.length < 2;
-      } catch (_) { /* labels need permission; ignore */ }
-    }
-    panel.hidden = false;
-    toggle.hidden = true;
-  }
-
-  toggle.addEventListener("click", () => start().catch((err) => { console.error(err); alert(t("cam.error")); }));
-  $("#cam-close")?.addEventListener("click", close);
-  select?.addEventListener("change", () => start(select.value).catch((err) => console.error(err)));
-  $("#cam-shot")?.addEventListener("click", () => {
-    if (!video.videoWidth) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const name = `camera_${isoDate(new Date())}_${Date.now().toString().slice(-4)}.jpg`;
-      close();
-      runFiles([new File([blob], name, { type: "image/jpeg" })]);
-    }, "image/jpeg", 0.95);
-  });
-}
-
 /* ------------------------------------------------------------------ analyse */
 
 async function runFiles(files, batch = batchMode) {
@@ -782,7 +730,7 @@ langHooks.push(() => {
 });
 initNumpad();
 applyLang(lang);
-initCamera();
+initCamera((file) => runFiles([file]));
 boot({
   manifest: (m) => renderSamples(m.samples || [], m.batch_samples || []),
   ready: (py) => {
