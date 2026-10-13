@@ -203,6 +203,7 @@ function initCapsUI() {
   ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
   drop.addEventListener("drop", (e) => runCaps([...e.dataTransfer.files].filter((f) => f.type.startsWith("image/"))));
   $("#caps-file").addEventListener("change", (e) => runCaps([...e.target.files]).then(() => (e.target.value = "")));
+  Telemetry.watchParams($("#caps-cfg"), () => readForm($("#caps-cfg"), true));
   $("#caps-cfg").addEventListener("input", () => {
     persist($("#caps-cfg"), CAPS_KEY, true);
     $("#caps-rerun").disabled = capsList.length === 0;
@@ -234,7 +235,7 @@ function renderCapsSamples(names) {
     b.disabled = !api;
     b.addEventListener("click", async () => {
       const blob = await (await fetch(`samples/caps/${n}`)).blob();
-      runCaps([new File([blob], n, { type: blob.type || "image/jpeg" })]);
+      runCaps([Telemetry.tag(new File([blob], n, { type: blob.type || "image/jpeg" }), "sample")]);
     });
     box.appendChild(b);
   });
@@ -305,10 +306,14 @@ function renderCapsCard(c) {
   }
   $(".caps-img", c.el).addEventListener("click", (e) => lightbox(e.target.src));
   $(".caps-pdf", c.el).addEventListener("click", () => downloadCapsPdf([c]));
+  c.fb = c.fb || {};
+  $(".caps-main", c.el).append(Telemetry.feedbackBar({ kind: "caps", result: Telemetry.capsResult(d), state: c.fb }));
   $(".caps-png", c.el).addEventListener("click", async () => {
+    Telemetry.log("export", { format: "png", n: 1 });
     download(`${stem(c.file.name)}_caps.jpg`, await (await fetch(d.overlay)).blob());
   });
   $(".caps-csv", c.el).addEventListener("click", () => {
+    Telemetry.log("export", { format: "csv", n: 1 });
     const lines = ["cap,x_px,y_px,diameter_px,size", ...d.caps.map((p, i) => [i + 1, p[0], p[1], (p[2] * 2).toFixed(1), p[3]].join(","))];
     download(`${stem(c.file.name)}_caps.csv`, new Blob(["﻿" + lines.join("\n")], { type: "text/csv" }));
   });
@@ -325,7 +330,10 @@ async function runCaps(files) {
     await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
+      const t0 = performance.now();
       const data = JSON.parse(api.count_caps_to_json(bytes, cfgJson, file.name));
+      Telemetry.log("analyze_done", { source: Telemetry.sourceOf(file), image: Telemetry.imageInfo(file, data.image_size),
+        params: Telemetry.params(JSON.parse(cfgJson)), result: Telemetry.capsResult(data), timing_ms: { analyze: Math.round(performance.now() - t0) } });
       const analyzedAt = new Date();
       const c = { file, data, el, analyzedAt, reportNo: newReportNo(analyzedAt, "PQC-C") };
       capsList.push(c);
@@ -334,6 +342,7 @@ async function runCaps(files) {
       $("#caps-pdf-all").disabled = false;
     } catch (err) {
       console.error(err);
+      Telemetry.log("analyze_error", { source: Telemetry.sourceOf(file), error: String(err?.message || err).slice(0, 120) });
       el.innerHTML = `<p class="error">${esc(t("card.error", { name: file.name }))}</p>`;
     }
   }
@@ -481,6 +490,7 @@ function capsReportPages(c, info, issued, lng) {
 }
 
 async function downloadCapsPdf(items) {
+  Telemetry.log("export", { format: "pdf", n: items.length });
   if (!items.length) return;
   const lng = lang;
   const info = readForm($("#caps-info"), false);
@@ -506,7 +516,7 @@ langHooks.push(() => {
 initCapsUI();
 initNumpad();
 applyLang(lang);
-initCamera((file) => runCaps([file]));
+initCamera((file) => runCaps([Telemetry.tag(file, "camera")]));
 boot({
   manifest: (m) => renderCapsSamples(m.caps_samples || []),
   ready: (py) => {

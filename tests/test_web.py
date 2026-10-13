@@ -24,7 +24,7 @@ def test_all_languages_have_the_same_keys():
 
 
 def test_edition_copies_of_shared_files_are_in_sync():
-    for name in ("app.js", "common.js", "caps.js", "i18n.js"):
+    for name in ("app.js", "common.js", "caps.js", "i18n.js", "telemetry.js", "config.js"):
         assert (ROOT / "web-dashboard" / name).read_bytes() == (ROOT / "web" / name).read_bytes(), name
 
 
@@ -135,9 +135,9 @@ def test_readme_images_exist_and_none_is_unused():
 def test_camera_code_is_shared_and_the_cap_page_has_the_camera_ui():
     common = (ROOT / "web" / "common.js").read_text(encoding="utf-8")
     assert "function initCamera(onCapture)" in common and "onCapture(new File(" in common
-    assert "initCamera((file) => runFiles([file]))" in (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    assert 'initCamera((file) => runFiles([Telemetry.tag(file, "camera")]))' in (ROOT / "web" / "app.js").read_text(encoding="utf-8")
     caps = (ROOT / "web" / "caps.js").read_text(encoding="utf-8")
-    assert "initCamera((file) => runCaps([file]))" in caps
+    assert 'initCamera((file) => runCaps([Telemetry.tag(file, "camera")]))' in caps
     for ident in ("cam-toggle", "cam-panel", "cam-video", "cam-shot", "cam-close", "cam-canvas", "cam-select"):
         assert f'id="{ident}"' in caps, ident
     assert "function initCamera" not in (ROOT / "web" / "app.js").read_text(encoding="utf-8")  # no second copy
@@ -173,3 +173,23 @@ def test_result_card_layout_uses_its_own_width_and_has_all_parts():
     for lang, ks in keys.items():
         assert {"caps.th.type", "caps.th.count", "caps.th.share", "caps.th.area", "caps.total", "caps.areaVisibleShort", "caps.compo", "caps.zoomHint"} <= ks, lang
         assert "caps.meta" not in ks, lang  # replaced by the KPI tiles
+
+
+def test_usage_log_is_local_only_and_wired_into_both_pages():
+    js = (ROOT / "web" / "telemetry.js").read_text(encoding="utf-8")
+    # nothing leaves the device unless the host set an endpoint AND the visitor agreed (level B)
+    assert "XMLHttpRequest" not in js and js.count("fetch(") == 1 and "const sending = () => !!endpoint() && consent === \"yes\"" in js
+    assert "if (!sending() || !queue.length) return;" in js and "if (sending()) queue" in js
+    cfg = (ROOT / "web" / "config.js").read_text(encoding="utf-8")
+    assert 'logEndpoint: ""' in cfg  # shipped disabled
+    for edition in ("web", "web-dashboard"):
+        assert (ROOT / edition / "config.js").read_bytes() == (ROOT / "web" / "config.js").read_bytes()
+    for edition in ("web", "web-dashboard"):
+        for page, script in (("index.html", "app.js"), ("caps.html", "caps.js")):
+            html = (ROOT / edition / page).read_text(encoding="utf-8")
+            assert html.index('src="common.js"') < html.index('src="config.js"') < html.index('src="telemetry.js"') < html.index(f'src="{script}"')
+    for name in ("app.js", "caps.js"):
+        src = (ROOT / "web" / name).read_text(encoding="utf-8")
+        assert "Telemetry.log(\"analyze_done\"" in src and "Telemetry.feedbackBar(" in src
+    for lang, ks in keys_by_lang().items():
+        assert {"log.count", "log.localOnly", "consent.title", "consent.text", "consent.yes", "consent.no", "log.shareOn", "log.shareOff", "log.download", "log.clear", "fb.ask", "fb.good", "fb.thanks"} <= ks, lang

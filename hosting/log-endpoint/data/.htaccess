@@ -1,0 +1,5 @@
+# the collected logs are private - never serve them over the web
+Require all denied
+<IfModule !mod_authz_core.c>
+  Deny from all
+</IfModule>

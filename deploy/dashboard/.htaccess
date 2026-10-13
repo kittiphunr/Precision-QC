@@ -14,7 +14,8 @@ AddType image/webp .webp
 
 <IfModule mod_headers.c>
   # always fetch the newest page and manifest; .py URLs carry ?v=<build>
-  <FilesMatch "\.(html|json)$">
+  # config.js is edited on the server (usage-log endpoint), so it is always revalidated too
+  <FilesMatch "\.(html|json)$|^config\.js$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
   Header set X-Content-Type-Options "nosniff"

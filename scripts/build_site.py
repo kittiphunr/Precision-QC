@@ -41,10 +41,10 @@ CAPS_GUIDE = {"ogH13y9c.jpg", "sVrmKJ-V.jpg"}  # already-annotated reference pic
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 # page assets (besides index.html) that get a ?v=<hash> for cache-busting
 # index.html = dish QC page, caps.html = mushroom cap counter page (each edition ships both)
-EDITION_ASSETS = {"web": ("style.css", "i18n.js", "common.js", "app.js"),
-                  "web-dashboard": ("tw-dash.css", "i18n.js", "common.js", "app.js", "ui-dash.js")}
-CAPS_PAGE_ASSETS = {"web": ("style.css", "i18n.js", "common.js", "caps.js"),
-                    "web-dashboard": ("tw-dash.css", "i18n.js", "common.js", "caps.js", "ui-dash.js")}
+EDITION_ASSETS = {"web": ("style.css", "i18n.js", "common.js", "config.js", "telemetry.js", "app.js"),
+                  "web-dashboard": ("tw-dash.css", "i18n.js", "common.js", "config.js", "telemetry.js", "app.js", "ui-dash.js")}
+CAPS_PAGE_ASSETS = {"web": ("style.css", "i18n.js", "common.js", "config.js", "telemetry.js", "caps.js"),
+                    "web-dashboard": ("tw-dash.css", "i18n.js", "common.js", "config.js", "telemetry.js", "caps.js", "ui-dash.js")}
 # hostnames always allowed so local testing of the deploy/ folder keeps working
 LOCAL_HOSTS = ["localhost", "127.0.0.1"]
 # pinned so the built output is identical locally and in CI (the drift check in
