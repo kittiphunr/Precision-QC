@@ -1,7 +1,7 @@
 # แนวทางการเก็บ Log การใช้งาน (Usage Logging)
 
 เป้าหมาย: เก็บข้อมูลจากการใช้งานจริง เพื่อนำไปปรับเกณฑ์ PASS/FAIL, ปรับอัลกอริทึม และวางแผนพัฒนาระบบในอนาคต
-เอกสารนี้เป็น **แนวทาง/ข้อกำหนด** — **ระดับ A (เก็บในเครื่อง) ทำเสร็จแล้ว** ดู [สถานะการใช้งานจริง](#สถานะการใช้งานจริง-ระดับ-a) ท้ายเอกสาร ส่วนระดับ B/C ยังไม่ได้ทำ
+เอกสารนี้เป็น **แนวทาง/ข้อกำหนด** — **ระดับ A (เก็บในเครื่อง) ทำเสร็จแล้ว** ดู [สถานะการใช้งานจริง](#สถานะการใช้งานจริง-ระดับ-a) ท้ายเอกสาร **ระดับ C (CLI/Actions) ทำเสร็จแล้ว** ส่วนระดับ B ยังไม่ได้ทำ
 
 ## 1) หลักการ
 
@@ -73,7 +73,7 @@
 
 ## 5) การทำงานฝั่ง CLI / Actions
 
-- เพิ่ม option `--log-dir logs/` ใน `precision_qc/cli.py` เขียน JSONL ด้วย schema เดียวกัน (`source: "cli"`)
+- option `--log-dir logs/` ใน `precision_qc/cli.py` เขียน JSONL ด้วย schema เดียวกัน (`source: "cli"`) — ดู [สถานะ ระดับ C](#สถานะการใช้งานจริง-ระดับ-c-cli--actions)
 - `.github/workflows/qc-batch.yml` อัปโหลด `logs/` เป็น artifact (อย่า commit เข้า repo — เพิ่ม `logs/` ใน `.gitignore`)
 
 ## 6) การเก็บรักษาและความปลอดภัย
@@ -97,7 +97,7 @@
 
 1. ✅ ตกลง schema (เอกสารนี้)
 2. ✅ `telemetry.js` ระดับ A + ปุ่มดาวน์โหลด log + ปุ่ม feedback
-3. `--log-dir` ใน CLI/Actions
+3. ✅ `--log-dir` ใน CLI/Actions
 4. แบนเนอร์ consent + ข้อความความเป็นส่วนตัว 3 ภาษา
 5. เปิด endpoint (ระดับ B) หลังทดสอบ schema กับข้อมูลจริงระยะหนึ่ง
 
@@ -111,3 +111,18 @@
 - ปุ่ม feedback ในการ์ดผลทุกใบ: 👍 ถูกต้อง · 👎 ควรเป็น PASS/FAIL (หน้าตรวจจาน) · 👎 + จำนวนจริง (หน้านับดอก) ซึ่งเป็นป้ายกำกับจริงสำหรับประเมินความแม่นยำ
 - ท้ายหน้ามีจำนวนรายการ พร้อมปุ่ม *ดาวน์โหลด* (`.jsonl`) และ *ลบ*
 - ข้อความ 3 ภาษาอยู่ใน `i18n.js` (คีย์ `log.*`, `fb.*`)
+
+## สถานะการใช้งานจริง (ระดับ C: CLI / Actions)
+
+```bash
+python -m precision_qc inputs/ -o reports --log-dir logs        # ตรวจจาน
+python -m precision_qc inputs/ -o reports --log-dir logs --multi # หลายจานในภาพเดียว
+python -m precision_qc inputs/ -o reports --log-dir logs --caps  # นับดอกเห็ด
+```
+
+- เขียนต่อท้าย (append) ที่ `logs/usage-YYYYMMDD.jsonl` (วันที่ตาม UTC) — รันซ้ำหลายครั้งในวันเดียวกันได้ไฟล์เดียวกัน ถ้าไม่ใส่ `--log-dir` จะไม่เขียนอะไรเลย
+- schema เดียวกับเว็บ: `app.ui = "cli"`, `source = "cli"`, `mode` = `dish` | `caps`; เหตุการณ์ `run_start`, `analyze_done` (โหมด `--multi` ได้หนึ่งรายการต่อจาน พร้อม `batch.plates/rank`), `analyze_error`
+- **ไม่เก็บชื่อไฟล์/พาธ/เนื้อภาพ** — เก็บแค่ขนาดไฟล์และขนาดภาพ; `analyze_error` เก็บเฉพาะชื่อชนิด exception เพราะข้อความมักมีพาธไฟล์
+- เขียน log ไม่สำเร็จ (เช่น โฟลเดอร์สร้างไม่ได้) จะแจ้งเตือนทาง stderr แล้วทำงานต่อ ไม่ทำให้การวิเคราะห์ล้มเหลว
+- `.github/workflows/qc-batch.yml` ใส่ `--log-dir logs` และอัปโหลดเป็น artifact `qc-usage-log` (เก็บ 90 วัน) แยกจาก `qc-reports`; `logs/` อยู่ใน `.gitignore` (ห้าม commit)
+- รวมหลายไฟล์เข้าด้วยกันได้ง่าย: `cat logs/usage-*.jsonl | python -c "import sys,json; ..."` หรือโหลดด้วย pandas `read_json(lines=True)`

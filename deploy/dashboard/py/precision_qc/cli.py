@@ -11,16 +11,86 @@ import argparse
 import csv
 import json
 import os
+import platform
 import sys
+import time
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
+from . import __version__
 from .analyzer import QCConfig, analyze
 from .batch import analyze_plates, overview_image, rank_key
 from .caps import CapConfig, count_caps, overlay_image, step_images
 from .render import report_image
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+
+
+class UsageLog:
+    """Optional usage log (``--log-dir``): one JSON object per line appended to
+    ``<dir>/usage-YYYYMMDD.jsonl`` in the same schema as the web app's local log
+    (docs/LOGGING.md). Only numbers and metadata are written - never the image, its
+    name or its path. A disabled log (no directory) does nothing, and a write error
+    never breaks the analysis."""
+
+    def __init__(self, directory=None, mode: str = "dish"):
+        self.dir = Path(directory) if directory else None
+        self.mode = mode
+        self.session = uuid.uuid4().hex[:16]
+        if self.dir:
+            try:
+                self.dir.mkdir(parents=True, exist_ok=True)
+            except OSError as err:
+                print(f"warning: cannot create log dir {self.dir}: {err}", file=sys.stderr)
+                self.dir = None
+
+    def log(self, event: str, **data) -> None:
+        if not self.dir:
+            return
+        now = datetime.now(timezone.utc)
+        rec = {"v": 1, "ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "session": self.session, "event": event,
+               "app": {"ui": "cli", "ver": __version__}, "mode": self.mode, **data,
+               "env": {"python": platform.python_version(), "os": platform.system(), "ci": bool(os.environ.get("GITHUB_ACTIONS"))}}
+        try:
+            with open(self.dir / f"usage-{now:%Y%m%d}.jsonl", "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        except OSError as err:
+            print(f"warning: cannot write usage log: {err}", file=sys.stderr)
+            self.dir = None
+
+    def attempt(self, fn, **extra):
+        """Call ``fn()``; return ``(value, elapsed_ms)``. A failure is logged as analyze_error and re-raised."""
+        t0 = time.perf_counter()
+        try:
+            value = fn()
+        except Exception as err:
+            self.log("analyze_error", source="cli", error=type(err).__name__, **extra)
+            raise
+        return value, round((time.perf_counter() - t0) * 1000)
+
+    def done(self, f: Path, rep: dict, result: dict, ms: int, **extra) -> None:
+        """Log one finished analysis (``rep`` is its JSON report)."""
+        w, h = rep.get("image_size") or (None, None)
+        self.log("analyze_done", source="cli", image={"w": w, "h": h, "bytes": f.stat().st_size},
+                 params=_numeric(rep.get("config")), result=result, timing_ms={"analyze": ms}, **extra)
+
+
+def _numeric(d) -> dict:
+    return {k: v for k, v in (d or {}).items() if isinstance(v, (int, float, bool))}
+
+
+def _dish_result(rep) -> dict:
+    return {"verdict": rep["result"], "score": rep["score"], "grade": rep["grade"],
+            "reasons": [x["code"] for x in rep["reasons"]], "growth": rep["metrics"]["growth"],
+            "contamination": rep["contamination"]["contamination"], "agar": rep["contamination"]["agar"]}
+
+
+def _caps_result(rep) -> dict:
+    c = rep["counts"]
+    return {"count": rep["total"], "small": c["small"], "medium": c["medium"], "large": c["large"], "hidden": c["hidden"],
+            "bunch_area_pct": rep.get("bunch_area_pct"), "density": rep.get("caps_per_1000px2")}
 
 
 def collect(paths: List[str]) -> List[Path]:
@@ -62,11 +132,12 @@ def markdown_table(rows) -> str:
     return "\n".join(lines)
 
 
-def run_multi(files, cfg, out: Path, no_images: bool):
+def run_multi(files, cfg, out: Path, no_images: bool, ulog: UsageLog = None):
     """Each photo holds several dishes: split, analyse each, rank within the photo and overall."""
+    ulog = ulog or UsageLog()
     rows = []
     for f in files:
-        res = analyze_plates(f, cfg, name=f.name)
+        res, ms = ulog.attempt(lambda: analyze_plates(f, cfg, name=f.name), batch=True)
         if not no_images:
             overview_image(res).save(out / f"{f.stem}_overview.png")
         print(f"{f.name}: {res.summary['plates']} plate(s)  PASS {res.summary['pass']} / FAIL {res.summary['fail']}")
@@ -75,6 +146,7 @@ def run_multi(files, cfg, out: Path, no_images: bool):
             rep["photo"] = f.name
             rep["name"] = f"{f.stem}#{p.index}"
             rows.append(rep)
+            ulog.done(f, rep, _dish_result(rep), ms, batch={"plates": res.summary["plates"], "rank": p.rank})
             stem = f"{f.stem}_p{p.index}"
             (out / f"{stem}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8")
             if not no_images:
@@ -102,17 +174,19 @@ def multi_table(rows) -> str:
     return "\n".join(lines)
 
 
-def run_caps(files, args, out: Path) -> int:
+def run_caps(files, args, out: Path, ulog: UsageLog = None) -> int:
     """Each photo is one bunch of mushrooms: count the caps by size."""
     data = {}
     for item in args.set or []:
         key, _, value = item.partition("=")
         data[key.strip()] = value.strip()
     cfg = CapConfig.from_dict(data)
+    ulog = ulog or UsageLog(mode="caps")
     rows = []
     for f in files:
-        res = count_caps(f, cfg, name=f.name)
+        res, ms = ulog.attempt(lambda: count_caps(f, cfg, name=f.name))
         rep = res.report
+        ulog.done(f, rep, _caps_result(rep), ms)
         rows.append(rep)
         (out / f"{f.stem}_caps.json").write_text(json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8")
         if not args.no_images:
@@ -157,6 +231,9 @@ def main(argv=None) -> int:
                     help="count the mushroom caps of a bunch (ช่อดอก): small / medium / large (use --set contrast=3 etc.)")
     ap.add_argument("--steps", action="store_true",
                     help="with --caps: also save the counting technique step by step (<image>_steps/NN_<step>.png)")
+    ap.add_argument("--log-dir", metavar="DIR",
+                    help="append a usage log (numbers and metadata only, no images) to DIR/usage-YYYYMMDD.jsonl "
+                         "for later analysis - see docs/LOGGING.md")
     ap.add_argument("--strict", action="store_true", help="exit with code 1 if any image FAILs")
     args = ap.parse_args(argv)
 
@@ -166,12 +243,15 @@ def main(argv=None) -> int:
         return 0
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    mode = "caps" if args.caps else "dish"
+    ulog = UsageLog(args.log_dir, mode)
+    ulog.log("run_start", cli={"multi": args.multi, "images": len(files)})
     if args.caps:
-        return run_caps(files, args, out)
+        return run_caps(files, args, out, ulog)
     cfg = build_config(args)
 
     if args.multi:
-        rows = run_multi(files, cfg, out, args.no_images)
+        rows = run_multi(files, cfg, out, args.no_images, ulog)
         with open(out / "summary.csv", "w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["overall_rank", "photo", "plate", "rank_in_photo", "plates_in_photo", "result", "score", "grade",
@@ -193,8 +273,9 @@ def main(argv=None) -> int:
 
     rows = []
     for f in files:
-        an = analyze(f, cfg, name=f.name)
+        an, ms = ulog.attempt(lambda: analyze(f, cfg, name=f.name))
         rep = an.report
+        ulog.done(f, rep, _dish_result(rep), ms)
         rows.append(rep)
         (out / f"{f.stem}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8")
         if not args.no_images:

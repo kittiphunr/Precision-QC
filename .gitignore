@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 _site/
 reports/
+logs/
 .venv/
 # compiled by scripts/build_site.py — not source
 web-dashboard/tw-dash.css

@@ -364,3 +364,60 @@ def _png_bytes(arr):
     buf = io.BytesIO()
     Image.fromarray(arr).save(buf, format="PNG")
     return buf.getvalue()
+
+
+def _read_log(directory):
+    files = sorted(Path(directory).glob("usage-*.jsonl"))
+    assert len(files) == 1 and files[0].name.startswith("usage-")
+    return [json.loads(line) for line in files[0].read_text(encoding="utf-8").splitlines()]
+
+
+def test_cli_log_dir_records_numbers_only_and_appends(tmp_path):
+    img = SAMPLES / "white_colony.jpg"
+    logs = tmp_path / "logs"
+    for _ in range(2):  # a second run appends to the same day file
+        assert cli_main([str(img), "-o", str(tmp_path / "out"), "--no-images", "--log-dir", str(logs)]) == 0
+    ev = _read_log(logs)
+    assert [e["event"] for e in ev] == ["run_start", "analyze_done"] * 2
+    done = ev[1]
+    assert done["v"] == 1 and done["app"]["ui"] == "cli" and done["source"] == "cli" and done["mode"] == "dish"
+    assert done["result"]["verdict"] == "PASS" and done["result"]["score"] > 60
+    assert done["params"]["min_score"] == 60 and done["image"]["bytes"] == img.stat().st_size
+    assert done["timing_ms"]["analyze"] >= 0 and ev[0]["session"] != ev[2]["session"]
+    raw = (Path(logs) / next(logs.iterdir()).name).read_text(encoding="utf-8")
+    assert "white_colony" not in raw and str(tmp_path) not in raw  # no file name or path
+
+
+def test_cli_log_dir_caps_and_multi(tmp_path):
+    from PIL import Image
+
+    img, _ = bunch_photo()
+    f = tmp_path / "bunch.png"
+    Image.fromarray(img).save(f)
+    assert cli_main([str(f), "--caps", "-o", str(tmp_path / "o1"), "--no-images", "--log-dir", str(tmp_path / "l1")]) == 0
+    done = [e for e in _read_log(tmp_path / "l1") if e["event"] == "analyze_done"][0]
+    assert done["mode"] == "caps" and done["result"]["count"] > 0 and "contrast" in done["params"]
+    folder = SAMPLES / "แบบชุด"
+    if folder.is_dir():
+        assert cli_main([str(folder / "bU--ghfq.jpg"), "-o", str(tmp_path / "o2"), "--multi", "--no-images", "--log-dir", str(tmp_path / "l2")]) == 0
+        plates = [e for e in _read_log(tmp_path / "l2") if e["event"] == "analyze_done"]
+        assert len(plates) == 2 and plates[0]["batch"]["plates"] == 2
+
+
+def test_cli_without_log_dir_writes_no_log_and_a_bad_dir_never_breaks_the_run(tmp_path, capsys):
+    img = str(SAMPLES / "white_colony.jpg")
+    assert cli_main([img, "-o", str(tmp_path / "out"), "--no-images"]) == 0
+    assert not list(tmp_path.rglob("usage-*.jsonl"))
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    assert cli_main([img, "-o", str(tmp_path / "out2"), "--no-images", "--log-dir", str(blocker / "sub")]) == 0
+    assert "warning" in capsys.readouterr().err
+
+
+def test_cli_log_dir_records_errors_then_reraises(tmp_path):
+    bad = tmp_path / "broken.png"
+    bad.write_bytes(b"not an image")
+    with pytest.raises(Exception):
+        cli_main([str(bad), "-o", str(tmp_path / "out"), "--log-dir", str(tmp_path / "logs")])
+    ev = _read_log(tmp_path / "logs")
+    assert ev[-1]["event"] == "analyze_error" and "broken" not in json.dumps(ev[-1]) and str(tmp_path) not in json.dumps(ev[-1])
