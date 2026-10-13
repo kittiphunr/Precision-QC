@@ -21,6 +21,7 @@ $("#cfg").addEventListener("input", () => {
   persist($("#cfg"), CFG_KEY, true);
   $("#rerun").disabled = results.length === 0;
 });
+Telemetry.watchParams($("#cfg"), () => readForm($("#cfg"), true));
 $("#info").addEventListener("input", () => persist($("#info"), INFO_KEY, false));
 loadForm($("#info"), INFO_KEY);
 
@@ -58,7 +59,7 @@ function renderSamples(names, batchNames = []) {
     b.disabled = true;
     b.addEventListener("click", async () => {
       const blob = await (await fetch(`samples/batch/${n}`)).blob();
-      runFiles([new File([blob], n, { type: blob.type || "image/jpeg" })], true);
+      runFiles([Telemetry.tag(new File([blob], n, { type: blob.type || "image/jpeg" }), "sample")], true);
     });
     box.appendChild(b);
   });
@@ -69,7 +70,7 @@ function renderSamples(names, batchNames = []) {
     b.disabled = true;
     b.addEventListener("click", async () => {
       const blob = await (await fetch(`samples/${n}`)).blob();
-      runFiles([new File([blob], n, { type: blob.type || "image/jpeg" })]);
+      runFiles([Telemetry.tag(new File([blob], n, { type: blob.type || "image/jpeg" }), "sample")]);
     });
     box.appendChild(b);
   }
@@ -281,7 +282,9 @@ async function runBatchFile(file, cfgJson) {
   await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
+    const t0 = performance.now();
     const data = JSON.parse(api.analyze_plates_to_json(bytes, cfgJson, file.name));
+    const ms = Math.round(performance.now() - t0);
     const key = labelKey(file);
     if (!labelStore.has(key)) labelStore.set(key, {});
     if (!data.plates.length) {
@@ -304,12 +307,16 @@ async function runBatchFile(file, cfgJson) {
       results.push(item);
       mountCard(item);
       cards.push(card);
+      Telemetry.log("analyze_done", { source: Telemetry.sourceOf(file), batch: { plates: data.plates.length, rank: rep.rank },
+        image: Telemetry.imageInfo(file, rep.image_size), params: Telemetry.params(rep.config),
+        result: Telemetry.dishResult(rep), timing_ms: { analyze: ms } });
     }
     $("#results").prepend(...cards);
     batches.push(b);
     renderBatch(b);
   } catch (err) {
     console.error(err);
+    Telemetry.log("analyze_error", { source: Telemetry.sourceOf(file), batch: true, error: String(err?.message || err).slice(0, 120) });
     el.innerHTML = `<p class="error">${esc(t("card.error", { name: file.name }))}</p>`;
   }
   renderSummary();
@@ -329,7 +336,10 @@ async function runFiles(files, batch = batchMode) {
     await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
+      const t0 = performance.now();
       const report = JSON.parse(api.analyze_to_json(bytes, cfgJson, file.name));
+      Telemetry.log("analyze_done", { source: Telemetry.sourceOf(file), image: Telemetry.imageInfo(file, report.image_size),
+        params: Telemetry.params(report.config), result: Telemetry.dishResult(report), timing_ms: { analyze: Math.round(performance.now() - t0) } });
       const analyzedAt = new Date();
       const item = { id: ++seq, file, report, analyzedAt, reportNo: newReportNo(analyzedAt), card };
       results.push(item);
@@ -338,6 +348,7 @@ async function runFiles(files, batch = batchMode) {
       openResult(item); // modal editions: pop the result up full-screen (no-op otherwise)
     } catch (err) {
       console.error(err);
+      Telemetry.log("analyze_error", { source: Telemetry.sourceOf(file), error: String(err?.message || err).slice(0, 120) });
       card.innerHTML = `<p class="error">${esc(t("card.error", { name: file.name }))}</p>`;
     }
     renderSummary();
@@ -348,6 +359,9 @@ function mountCard(item) {
   const card = item.card;
   card.innerHTML = renderCard(item);
   $(".dl-one", card).addEventListener("click", () => downloadPdf([item]));
+  item.fb = item.fb || {};
+  const bar = Telemetry.feedbackBar({ kind: "dish", result: Telemetry.dishResult(item.report), state: item.fb });
+  ($(".reasons", card) || $(".card-body", card) || card).after(bar);
   card.querySelectorAll(".thumbs img, .photo img").forEach((img) => img.addEventListener("click", () => lightbox(img.src)));
 }
 
@@ -522,6 +536,7 @@ function closeResult() {
 
 /* ------------------------------------------------------------------- export */
 $("#dl-csv").addEventListener("click", () => {
+  Telemetry.log("export", { format: "csv", n: results.length });
   const head = ["report_no", "image", "result", "score", "grade", "growth_pct", "whiteness_pct", "fluffiness_pct",
     "shape_iou", "exposed_agar_pct", "contamination_pct", "colony_width_cm", "colony_height_cm", "reasons", "photo", "plate", "rank_in_photo"];
   const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
@@ -703,6 +718,7 @@ function reportPages(item, info, issued, lng) {
 }
 
 async function downloadPdf(items) {
+  Telemetry.log("export", { format: "pdf", n: items.length });
   if (!items.length) return;
   const lng = lang;
   const info = readForm($("#info"), false);
@@ -730,7 +746,7 @@ langHooks.push(() => {
 });
 initNumpad();
 applyLang(lang);
-initCamera((file) => runFiles([file]));
+initCamera((file) => runFiles([Telemetry.tag(file, "camera")]));
 boot({
   manifest: (m) => renderSamples(m.samples || [], m.batch_samples || []),
   ready: (py) => {
