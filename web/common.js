@@ -141,7 +141,7 @@ function applyPrimary(hex) {
   else {
     const [h, s, l5] = hexToHsl(hex);
     for (const [n, t] of Object.entries(PRIMARY_STEPS)) {
-      const l = n < 500 ? 0.97 + (l5 - 0.97) * (1 - t) : l5 + (0.16 - l5) * t;
+      const l = n < 500 ? 0.97 + (l5 - 0.97) * t : l5 + (0.16 - l5) * t;
       st.setProperty("--p-" + n, hslToChannels(h, n < 500 ? s * 0.9 : s, Math.min(0.97, Math.max(0.12, l))));
     }
     const n = parseInt(hex.slice(1), 16);
