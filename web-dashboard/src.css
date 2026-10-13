@@ -1,8 +1,8 @@
 /* Precision QC — "Dashboard" edition — built with standard Tailwind CSS.
  * Layout and interface follow the Certify Hub guideline (sticky header, display
  * settings panel, About/credits dialog, centred footer).
- * The whole UI uses Tailwind's default palette (slate / indigo / emerald /
- * rose) and standard utilities via @apply — no custom theme colours or
+ * The whole UI uses Tailwind's default palette (slate / emerald / rose) plus a user-selectable
+ * "primary" colour (CSS variables --p-*, set from the display settings; default = indigo) and standard utilities via @apply — no custom theme colours or
  * arbitrary values. dark: follows the theme toggle + OS (see tailwind.config).
  * Only the A4 PDF report at the bottom keeps its fixed print values.
  */
@@ -11,6 +11,7 @@
 @tailwind utilities;
 
 @layer base {
+  :root { --p-50:238 242 255; --p-100:224 231 255; --p-200:199 210 254; --p-300:165 180 252; --p-400:129 140 248; --p-500:99 102 241; --p-600:79 70 229; --p-700:67 56 202; --p-800:55 48 163; --p-900:49 46 129; --p-950:30 27 75; --q-400:167 139 250; }
   html { @apply font-sans; }
   body { @apply m-0 bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 leading-relaxed; }
   [hidden] { display: none !important; }
@@ -33,13 +34,13 @@
 
   /* buttons */
   .pure-button { @apply inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 transition; }
-  .pure-button:hover { @apply border-indigo-400 bg-slate-50 dark:bg-slate-700 text-indigo-700 dark:text-indigo-300; }
-  .pure-button-primary { @apply border-transparent bg-indigo-500 text-white shadow-md shadow-indigo-500/30; }
-  .pure-button-primary:hover { @apply bg-indigo-600 text-white; }
+  .pure-button:hover { @apply border-primary-400 bg-slate-50 dark:bg-slate-700 text-primary-700 dark:text-primary-300; }
+  .pure-button-primary { @apply border-transparent bg-primary-500 text-white shadow-md shadow-primary-500/30; }
+  .pure-button-primary:hover { @apply bg-primary-600 text-white; }
   .pure-button:disabled, .pure-button[disabled] { @apply opacity-50 cursor-default shadow-none; }
 
   /* form controls (standard Tailwind) */
-  .pure-form input { @apply w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-base text-slate-800 dark:text-slate-100 transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900; }
+  .pure-form input { @apply w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-base text-slate-800 dark:text-slate-100 transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900; }
   .pure-form input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   .pure-input-1 { @apply w-full; }
   .pure-form-stacked label { @apply flex flex-col gap-1.5 m-0 text-sm font-semibold text-slate-600 dark:text-slate-300; }
@@ -51,15 +52,19 @@
   .pure-table tbody tr:last-child td { @apply border-b-0; }
 
   /* sidebar — Certify Hub admin style: floating icon rail (hover to expand), drawer on phones */
-  .icon-btn { @apply w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 grid place-items-center shrink-0 cursor-pointer no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-300; }
+  .icon-btn { @apply w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 grid place-items-center shrink-0 cursor-pointer no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary-700 dark:hover:text-primary-300; }
   .settings-wrap { @apply relative; }
   .panel-pop { @apply fixed z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl; left: 276px; bottom: 76px; }
   .panel-title { @apply m-0 font-bold; }
+  .swatches { @apply flex flex-wrap items-center gap-2; }
+  .swatch { @apply w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 ring-1 ring-slate-300 dark:ring-slate-600 cursor-pointer p-0 transition hover:scale-110; }
+  .swatch.is-active { @apply ring-2 ring-slate-800 dark:ring-white; }
+  .swatch-custom { @apply w-7 h-7 p-0 rounded-full border-0 bg-transparent cursor-pointer overflow-hidden; }
   .panel-label { @apply mt-3.5 mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
   .seg { @apply flex bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-0.5 gap-0.5; }
   .seg button { @apply flex-1 bg-transparent text-slate-600 dark:text-slate-300 border-0 rounded-lg m-0 cursor-pointer text-xs font-semibold px-2 py-1.5 inline-flex items-center justify-center gap-1 transition; }
   .seg button:hover { @apply text-slate-900 dark:text-white; }
-  .seg button.is-active { @apply bg-indigo-500 text-white; }
+  .seg button.is-active { @apply bg-primary-500 text-white; }
   .engine { @apply inline-flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full; }
   .engine .dot { @apply w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0; }
   .engine.loading .dot { animation: qc-warm .9s steps(1, end) infinite, qc-blink .45s ease-in-out infinite alternate; }
@@ -76,16 +81,16 @@
   html.sb-min .sb:hover, html.sb-min .sb:focus-within { width: 260px; @apply bg-slate-100 dark:bg-slate-950 shadow-2xl rounded-r-3xl; }
   .sb .t { @apply whitespace-nowrap; }
   .sb-brand { @apply flex items-center gap-3 h-12 no-underline text-slate-900 dark:text-slate-100 whitespace-nowrap; }
-  .badge-logo { @apply w-11 h-11 rounded-full bg-indigo-600 text-white grid place-items-center shrink-0 shadow-lg shadow-indigo-500/30; }
+  .badge-logo { @apply w-11 h-11 rounded-full bg-primary-600 text-white grid place-items-center shrink-0 shadow-lg shadow-primary-500/30; }
   .sb-brand b { @apply block text-base leading-tight; }
   .sb-brand small { @apply block text-xs text-slate-500 dark:text-slate-400 whitespace-normal leading-tight line-clamp-2; }
   .sb-cap { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2.5 shadow-sm flex flex-col gap-1 overflow-hidden; }
   .sb-foot { @apply mt-auto; }
   .sb a, .sb-btn { @apply relative flex items-center gap-3 w-full px-3.5 py-2.5 rounded-2xl text-sm text-slate-600 dark:text-slate-300 no-underline bg-transparent border-0 cursor-pointer text-left transition; }
   .sb .ic { @apply grid place-items-center shrink-0 text-slate-400; }
-  .sb a:hover, .sb-btn:hover { @apply bg-indigo-50 dark:bg-slate-800 text-slate-900 dark:text-white; }
-  .sb a:hover .ic, .sb-btn:hover .ic { @apply text-indigo-600 dark:text-indigo-300; }
-  .sb a.active { @apply bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/30; }
+  .sb a:hover, .sb-btn:hover { @apply bg-primary-50 dark:bg-slate-800 text-slate-900 dark:text-white; }
+  .sb a:hover .ic, .sb-btn:hover .ic { @apply text-primary-600 dark:text-primary-300; }
+  .sb a.active { @apply bg-primary-600 text-white font-semibold shadow-lg shadow-primary-500/30; }
   .sb a.active .ic { @apply text-white; }
   .sb .engine { @apply w-full rounded-2xl border-0 bg-transparent px-3.5 py-2.5 text-sm gap-3 items-start; }
   .sb .engine .dot { @apply mt-1.5; }
@@ -117,7 +122,7 @@
     html.sb-min .sb:not(:hover):not(:focus-within) .engine .dot { @apply mt-1.5; }
     html.sb-min .sb:not(:hover):not(:focus-within) .t { display: block; }
     .panel-pop { left: 1rem; right: 1rem; width: auto; bottom: 5rem; }
-    .sb-fab { @apply fixed z-30 left-4 bottom-5 w-12 h-12 rounded-full bg-indigo-600 text-white place-items-center shadow-xl shadow-indigo-500/40 border-0 cursor-pointer; display: grid; }
+    .sb-fab { @apply fixed z-30 left-4 bottom-5 w-12 h-12 rounded-full bg-primary-600 text-white place-items-center shadow-xl shadow-primary-500/40 border-0 cursor-pointer; display: grid; }
     .container { @apply pb-24; }
   }
 
@@ -129,14 +134,14 @@
   .stepper { @apply list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-7; }
   .stepper li { @apply relative flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-4 shadow-sm transition; }
   /* chevron between the cards (down on phones, right from sm up) */
-  .stepper li:not(:last-child)::after { content: "\203A"; @apply absolute -bottom-6 left-1/2 -translate-x-1/2 rotate-90 text-2xl leading-none text-indigo-300 dark:text-indigo-700 sm:bottom-auto sm:left-auto sm:-right-6 sm:top-1/2 sm:-translate-y-1/2 sm:translate-x-0 sm:rotate-0; }
+  .stepper li:not(:last-child)::after { content: "\203A"; @apply absolute -bottom-6 left-1/2 -translate-x-1/2 rotate-90 text-2xl leading-none text-primary-300 dark:text-primary-700 sm:bottom-auto sm:left-auto sm:-right-6 sm:top-1/2 sm:-translate-y-1/2 sm:translate-x-0 sm:rotate-0; }
   .stepper .n { @apply w-11 h-11 rounded-2xl grid place-items-center shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-lg font-extrabold transition; }
   .stepper .l { @apply grid min-w-0 gap-0.5 leading-snug; }
   .stepper .l b { @apply text-base font-bold text-slate-800 dark:text-slate-100; }
   .stepper .l small { @apply text-sm text-slate-500 dark:text-slate-400; }
   .stepper li[data-state="todo"] .l b { @apply text-slate-600 dark:text-slate-300; }
-  .stepper li[data-state="active"] { @apply border-indigo-300 dark:border-indigo-700 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950 dark:to-slate-900 shadow-md shadow-indigo-500/10 ring-1 ring-indigo-200 dark:ring-indigo-900; }
-  .stepper li[data-state="active"] .n { @apply bg-gradient-to-br from-indigo-500 to-violet-400 text-white shadow-lg shadow-indigo-500/30; }
+  .stepper li[data-state="active"] { @apply border-primary-300 dark:border-primary-700 bg-gradient-to-br from-primary-50 to-white dark:from-primary-950 dark:to-slate-900 shadow-md shadow-primary-500/10 ring-1 ring-primary-200 dark:ring-primary-900; }
+  .stepper li[data-state="active"] .n { @apply bg-gradient-to-br from-primary-500 to-accent2-400 text-white shadow-lg shadow-primary-500/30; }
   .stepper li[data-state="done"] { @apply border-emerald-200 dark:border-emerald-900; }
   .stepper li[data-state="done"] .n { @apply bg-emerald-500 text-white; }
   .stepper li[data-state="done"]:not(:last-child)::after { @apply text-emerald-400 dark:text-emerald-700; }
@@ -146,7 +151,7 @@
   .site-footer .credit { @apply m-0 leading-relaxed; }
   .site-footer .credit b { @apply font-semibold text-slate-600 dark:text-slate-300; }
   .site-footer .foot-line { @apply m-0; }
-  .site-footer a, .linkbtn { @apply text-indigo-700 dark:text-indigo-300 underline; }
+  .site-footer a, .linkbtn { @apply text-primary-700 dark:text-primary-300 underline; }
   .linkbtn { @apply bg-transparent border-0 p-0 cursor-pointer text-sm; }
   .modal { @apply fixed inset-0 z-50 bg-slate-950/60 p-4 grid place-items-center; }
   .modal-box { @apply relative w-full max-w-xl max-h-full overflow-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-5; }
@@ -155,14 +160,14 @@
   .about-head img { @apply w-16 h-16 object-contain shrink-0; }
   .about-head h2 { @apply m-0 text-xl font-bold; }
   .about-sec { @apply border-t border-slate-200 dark:border-slate-800 pt-3.5 mt-3.5; }
-  .about-sec h3 { @apply m-0 mb-2 text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300; }
+  .about-sec h3 { @apply m-0 mb-2 text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-300; }
   .about-sec p { @apply my-1.5 text-sm; }
-  .about-sec a { @apply text-indigo-700 dark:text-indigo-300 underline break-all; }
+  .about-sec a { @apply text-primary-700 dark:text-primary-300 underline break-all; }
   .dev { @apply flex items-center gap-3.5; }
-  .dev-photo { @apply w-24 h-24 rounded-full object-cover shrink-0 border-2 border-indigo-200 dark:border-indigo-800; }
+  .dev-photo { @apply w-24 h-24 rounded-full object-cover shrink-0 border-2 border-primary-200 dark:border-primary-800; }
   .about-sec .dev-name { @apply m-0 text-lg font-bold; }
   .about-sec .dev-en, .about-sec .dev-role, .about-sec .dev-org { @apply m-0 text-sm text-slate-600 dark:text-slate-300; }
-  .about-sec .dev-tag { @apply mt-1.5 mb-0 inline-block rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-3 py-0.5 text-xs font-semibold; }
+  .about-sec .dev-tag { @apply mt-1.5 mb-0 inline-block rounded-full bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300 px-3 py-0.5 text-xs font-semibold; }
   .dev-contact, .plain { @apply list-none p-0 my-2.5 grid gap-1; }
   .dev-contact li, .plain li { @apply flex gap-3 text-sm; }
   .dev-contact li > span, .plain li > span { @apply w-16 shrink-0 text-slate-500 dark:text-slate-400; }
@@ -178,29 +183,29 @@
   .stat-ic { @apply w-12 h-12 rounded-xl grid place-items-center shrink-0; }
   .stat-card.pass .stat-ic { @apply bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300; }
   .stat-card.fail .stat-ic { @apply bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300; }
-  .stat-card.total .stat-ic { @apply bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300; }
+  .stat-card.total .stat-ic { @apply bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300; }
   .stat-num { @apply text-3xl font-extrabold leading-none tabular-nums; }
   .stat-lbl { @apply text-sm text-slate-500 dark:text-slate-400 font-semibold mt-1; }
 
   /* cards + section titles */
   .section-title { @apply text-xs font-bold uppercase tracking-wide m-0 mb-3.5 text-slate-800 dark:text-slate-100 flex items-center gap-2; }
-  .section-title::before { content: ""; @apply w-2 h-2 rounded-full bg-indigo-500; }
+  .section-title::before { content: ""; @apply w-2 h-2 rounded-full bg-primary-500; }
   .panel { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5; }
 
   /* hero */
-  .hero { @apply relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl p-6 sm:p-7 text-white bg-gradient-to-br from-indigo-500 to-violet-400 shadow-xl shadow-indigo-500/30; }
+  .hero { @apply relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl p-6 sm:p-7 text-white bg-gradient-to-br from-primary-500 to-accent2-400 shadow-xl shadow-primary-500/30; }
   .hero-text { @apply min-w-0; }
   .hero-badge { @apply inline-block text-xs font-bold uppercase tracking-wide bg-white/20 border border-white/30 px-3 py-1 rounded-full; }
   .hero h2 { @apply mt-3 mb-0 text-xl font-bold leading-snug max-w-prose; }
-  .hero p { @apply mt-1.5 mb-0 text-sm text-indigo-100 max-w-prose; }
+  .hero p { @apply mt-1.5 mb-0 text-sm text-white/90 max-w-prose; }
   .hero-mark { @apply hidden sm:grid shrink-0 w-14 h-14 place-items-center text-white bg-white/15 border border-white/30 rounded-2xl; }
 
   /* upload + camera */
-  .drop { @apply flex flex-col items-center justify-center gap-1.5 min-h-44 p-6 text-center cursor-pointer border-2 border-dashed border-indigo-300 dark:border-indigo-800 rounded-xl bg-slate-50 dark:bg-slate-800 transition; }
-  .drop-icon { @apply text-indigo-500 bg-indigo-100 dark:bg-indigo-950 rounded-full w-16 h-16 p-3 mb-1.5; }
+  .drop { @apply flex flex-col items-center justify-center gap-1.5 min-h-44 p-6 text-center cursor-pointer border-2 border-dashed border-primary-300 dark:border-primary-800 rounded-xl bg-slate-50 dark:bg-slate-800 transition; }
+  .drop-icon { @apply text-primary-500 bg-primary-100 dark:bg-primary-950 rounded-full w-16 h-16 p-3 mb-1.5; }
   .drop strong { @apply text-base; }
   .drop span { @apply text-slate-500 dark:text-slate-400 text-sm; }
-  .drop:hover, .drop.over { @apply border-indigo-500 bg-indigo-100 dark:bg-indigo-950; }
+  .drop:hover, .drop.over { @apply border-primary-500 bg-primary-100 dark:bg-primary-950; }
   .drop.disabled { @apply opacity-50 pointer-events-none; }
   .camera { @apply mt-3.5; }
   .cam-open { @apply w-full; }
@@ -208,11 +213,11 @@
   .cam-video { @apply w-full max-h-96 bg-black rounded-xl block object-contain; }
   .cam-hint { @apply text-slate-500 dark:text-slate-400 text-sm my-3; }
   .cam-actions { @apply flex gap-2.5 flex-wrap items-center; }
-  .cam-select { @apply rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 px-3 py-2.5 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900; }
+  .cam-select { @apply rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 px-3 py-2.5 transition focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900; }
   .samples { @apply flex flex-wrap items-center gap-2 mt-4 text-slate-500 dark:text-slate-400 text-sm; }
   .chips { @apply flex flex-wrap gap-2; }
-  .chip.pure-button { @apply px-4 py-1.5 text-xs bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-transparent; }
-  .chip.pure-button:hover { @apply bg-indigo-200 dark:bg-indigo-900; }
+  .chip.pure-button { @apply px-4 py-1.5 text-xs bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300 border-transparent; }
+  .chip.pure-button:hover { @apply bg-primary-200 dark:bg-primary-900; }
 
   /* options */
   .options { @apply grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start; }
@@ -220,14 +225,14 @@
   .opt { @apply border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900; }
   .opt > summary { @apply list-none cursor-pointer px-4 py-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5; }
   .opt > summary::-webkit-details-marker { display: none; }
-  .opt > summary::before { content: "+"; @apply text-lg text-indigo-500 font-bold inline-block w-3.5; }
+  .opt > summary::before { content: "+"; @apply text-lg text-primary-500 font-bold inline-block w-3.5; }
   .opt[open] > summary::before { content: "\2212"; }
   .opt[open] > summary { @apply border-b border-slate-200 dark:border-slate-800; }
   .opt-title { @apply font-bold; }
   .opt-hint { @apply text-slate-500 dark:text-slate-400 text-sm; }
   .opt > form { @apply px-4 pb-4 pt-4; }
   .advanced { @apply mt-3; }
-  .advanced > summary { @apply cursor-pointer text-sm text-indigo-700 dark:text-indigo-300 font-semibold mb-2; }
+  .advanced > summary { @apply cursor-pointer text-sm text-primary-700 dark:text-primary-300 font-semibold mb-2; }
   .form-actions { @apply flex gap-2.5 flex-wrap justify-end mt-4; }
 
   /* summary */
@@ -269,8 +274,8 @@
   .v-text span { @apply text-sm text-slate-600 dark:text-slate-300; }
   /* score — gradient chip with readable text */
   .score { @apply text-right; }
-  .score .hero { @apply inline-flex items-baseline gap-1 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-400 px-5 py-3 text-5xl font-extrabold leading-none text-white tabular-nums; }
-  .score .hero small { @apply text-base font-semibold text-indigo-100; }
+  .score .hero { @apply inline-flex items-baseline gap-1 rounded-2xl bg-gradient-to-br from-primary-500 to-accent2-400 px-5 py-3 text-5xl font-extrabold leading-none text-white tabular-nums; }
+  .score .hero small { @apply text-base font-semibold text-white/90; }
   .score .grade { @apply mt-2 text-sm font-medium text-slate-600 dark:text-slate-300; }
   .reasons { @apply list-none mt-4 p-0 grid gap-2; }
   .reasons li { @apply flex gap-2 text-sm text-slate-600 dark:text-slate-300; }
@@ -281,8 +286,8 @@
   .tile .label { @apply text-sm text-slate-500 dark:text-slate-400 font-medium; }
   .tile .value { @apply text-2xl font-bold my-0.5 mb-2 tabular-nums; }
   .tile .value small { @apply text-sm font-medium text-slate-500 dark:text-slate-400; }
-  .meter { @apply relative h-2.5 rounded-full bg-indigo-100 dark:bg-indigo-950; }
-  .meter > i { @apply absolute inset-y-0 left-0 rounded-full bg-indigo-500; }
+  .meter { @apply relative h-2.5 rounded-full bg-primary-100 dark:bg-primary-950; }
+  .meter > i { @apply absolute inset-y-0 left-0 rounded-full bg-primary-500; }
   .meter.pass { @apply bg-emerald-100 dark:bg-emerald-950; } .meter.pass > i { @apply bg-emerald-500; }
   .meter.fail { @apply bg-rose-100 dark:bg-rose-950; } .meter.fail > i { @apply bg-rose-500; }
   .meter > u { @apply absolute -inset-y-0.5 w-0.5 bg-slate-800 dark:bg-slate-200 rounded-sm opacity-60; }
@@ -298,7 +303,7 @@
   .legend { @apply flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 mt-3.5; }
   .legend i { @apply inline-block w-3 h-3 rounded align-middle mr-1 border border-slate-200 dark:border-slate-700; }
   .loading-card { @apply flex items-center gap-2.5 text-slate-500 dark:text-slate-400 p-5; }
-  .spinner { @apply w-5 h-5 rounded-full border-2 border-indigo-100 dark:border-indigo-900 border-t-indigo-500 animate-spin shrink-0; }
+  .spinner { @apply w-5 h-5 rounded-full border-2 border-primary-100 dark:border-primary-900 border-t-primary-500 animate-spin shrink-0; }
   .error { @apply text-rose-700 dark:text-rose-300 p-5 m-0; }
   .lightbox { @apply fixed inset-0 bg-slate-950/90 grid place-items-center z-50 p-4 cursor-zoom-out; }
   .lightbox img { @apply max-w-3xl max-h-screen rounded-xl; }
@@ -310,7 +315,7 @@
   .rm-dialog { @apply relative w-full h-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col; }
   .rm-topbar { @apply shrink-0 flex items-center justify-between gap-3 px-4 py-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800; }
   .rm-body { @apply flex-1 overflow-auto; }
-  .rm-topbar h2 { @apply m-0 text-sm font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300; }
+  .rm-topbar h2 { @apply m-0 text-sm font-bold uppercase tracking-wide text-primary-700 dark:text-primary-300; }
   .rm-close { @apply w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer grid place-items-center shrink-0 transition hover:bg-rose-100 dark:hover:bg-rose-950 hover:text-rose-700 dark:hover:text-rose-300 hover:border-transparent; }
   .rm-body > .card { @apply border-0 rounded-none shadow-none; }
   .view-btn { @apply px-4 py-1 text-xs; }

@@ -98,6 +98,74 @@ function applyTheme(choice) {
 document.querySelectorAll(".theme-switch button").forEach((b) => b.addEventListener("click", () => applyTheme(b.dataset.themeChoice)));
 applyTheme(currentTheme());
 
+/* ------------------------------------------------------------ primary colour
+ * The Dashboard edition's accent colour. A palette (--p-50 … --p-950, as "R G B"
+ * channels) is derived from the chosen colour, which becomes the 500 shade.
+ * "" (default) removes the overrides so the stylesheet's built-in indigo applies. */
+const PRIMARY_KEY = "precision-qc-primary";
+const PRIMARY_PRESETS = ["#6366f1", "#3b82f6", "#0891b2", "#10b981", "#f59e0b", "#f43f5e", "#a855f7"];
+const PRIMARY_DEFAULT = PRIMARY_PRESETS[0];
+// position of each shade between the chosen colour (500) and near-white (50) / near-black (950)
+const PRIMARY_STEPS = { 50: 0, 100: 0.17, 200: 0.4, 300: 0.62, 400: 0.82, 600: 0.2, 700: 0.4, 800: 0.6, 900: 0.78, 950: 1 };
+
+function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+  let h = 0;
+  if (d) {
+    if (mx === r) h = ((g - b) / d) % 6;
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+  }
+  return [(h * 60 + 360) % 360, d ? d / (1 - Math.abs(2 * l - 1)) : 0, l];
+}
+
+function hslToChannels(h, s, l) {
+  const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+  return `${f(0)} ${f(8)} ${f(4)}`;
+}
+
+function currentPrimary() {
+  try {
+    const v = localStorage.getItem(PRIMARY_KEY);
+    return /^#[0-9a-f]{6}$/i.test(v || "") ? v.toLowerCase() : "";
+  } catch (_) { return ""; }
+}
+
+function applyPrimary(hex) {
+  const st = document.documentElement.style;
+  const vars = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"].map((n) => "--p-" + n).concat("--q-400");
+  if (!hex || hex === PRIMARY_DEFAULT) vars.forEach((v) => st.removeProperty(v));
+  else {
+    const [h, s, l5] = hexToHsl(hex);
+    for (const [n, t] of Object.entries(PRIMARY_STEPS)) {
+      const l = n < 500 ? 0.97 + (l5 - 0.97) * (1 - t) : l5 + (0.16 - l5) * t;
+      st.setProperty("--p-" + n, hslToChannels(h, n < 500 ? s * 0.9 : s, Math.min(0.97, Math.max(0.12, l))));
+    }
+    const n = parseInt(hex.slice(1), 16);
+    st.setProperty("--p-500", `${n >> 16} ${(n >> 8) & 255} ${n & 255}`);
+    st.setProperty("--q-400", hslToChannels((h + 30) % 360, s, 0.67));
+  }
+  try {
+    if (!hex || hex === PRIMARY_DEFAULT) localStorage.removeItem(PRIMARY_KEY);
+    else localStorage.setItem(PRIMARY_KEY, hex);
+  } catch (_) { /* ignore */ }
+  const cur = hex || PRIMARY_DEFAULT;
+  markActive(".swatches .swatch", (b) => b.dataset.primary === cur);
+  const custom = document.getElementById("primaryCustom");
+  if (custom) custom.value = cur;
+}
+
+document.querySelectorAll(".swatches .swatch").forEach((b) => {
+  b.style.backgroundColor = b.dataset.primary;
+  b.addEventListener("click", () => applyPrimary(b.dataset.primary));
+});
+const primaryCustom = document.getElementById("primaryCustom");
+if (primaryCustom) primaryCustom.addEventListener("input", () => applyPrimary(primaryCustom.value.toLowerCase()));
+if (document.querySelector(".swatches")) applyPrimary(currentPrimary());
+
 /* --------------------------------------------------------------------- boot
  * Loads the Python engine in the browser. A page passes
  *   manifest(m)  - called as soon as manifest.json is read (render sample buttons)
