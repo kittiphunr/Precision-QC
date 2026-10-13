@@ -131,9 +131,11 @@ python -m precision_qc inputs/ -o reports --log-dir logs --caps  # นับด�
 
 เลือก endpoint เป็น **PHP บนโฮสต์เดิม** (same-origin ไม่ต้องตั้ง CORS ใช้กับ shared hosting ได้เลย) — ถ้าภายหลังอยากใช้ Google Apps Script/Worker แทน แก้แค่ `logEndpoint` และสคริปต์ฝั่งรับ โดย payload เหมือนเดิม
 
+> ขั้นตอน deploy ทั้งหมดอยู่ใน [DEPLOY.md](DEPLOY.md) (หัวข้อที่ 4 คือการเปิดระบบนี้)
+
 **เปิดใช้งาน (ฝั่งผู้ดูแล, ไม่ต้อง build ใหม่)**
 1. อัปโหลดโฟลเดอร์ `hosting/log-endpoint/` (ไฟล์ `log.php` และ `data/.htaccess`) ไปไว้ข้างแอป เช่น `public_html/qc/log/`
-2. แก้ `config.js` บนเซิร์ฟเวอร์ (ใน `pure/` และ/หรือ `dashboard/`) เป็น `window.PQC_CONFIG={logEndpoint:"log/log.php"}` (path สัมพัทธ์กับหน้าเว็บ) — ค่าเริ่มต้น `""` = ปิด ข้อมูลอยู่ในเครื่องผู้ใช้อย่างเดียว
+2. แก้ `config.js` บนเซิร์ฟเวอร์ (ใน `pure/` และ/หรือ `dashboard/`) เป็น `window.PQC_CONFIG={logEndpoint:"/qc/log/log.php"}` (แนะนำ path จาก root ของเว็บ เพราะ `pure/` กับ `dashboard/` อยู่คนละโฟลเดอร์ — ปรับ `/qc/` ให้ตรงกับที่อัปโหลดจริง) — ค่าเริ่มต้น `""` = ปิด ข้อมูลอยู่ในเครื่องผู้ใช้อย่างเดียว
 3. ตรวจว่า `data/` เปิดจากเว็บไม่ได้ (เช่น `https://<โดเมน>/qc/log/data/` ต้องได้ 403) แล้วดึงไฟล์ `data/usage-YYYYMMDD.jsonl` ผ่าน SFTP มาวิเคราะห์
 
 **พฤติกรรมฝั่งผู้ใช้**
