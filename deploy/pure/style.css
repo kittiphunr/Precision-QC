@@ -13,7 +13,7 @@
   --soft: #f6f8fa;
   --navy: rgb(var(--p-900, 27 48 82));
   --navy-2: rgb(var(--p-800, 36 61 102));
-  --gold: #c9a24a;
+  --gold: rgb(var(--p-400, 201 162 74));
   /* accent follows the user-selectable primary colour (--p-* set by common.js); fallbacks = default blue */
   --accent: rgb(var(--p-600, 37 99 201));
   --accent-ink: rgb(var(--p-700, 29 79 163));
