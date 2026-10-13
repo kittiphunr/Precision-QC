@@ -24,7 +24,7 @@ def test_all_languages_have_the_same_keys():
 
 
 def test_edition_copies_of_shared_files_are_in_sync():
-    for name in ("app.js", "common.js", "caps.js", "i18n.js", "telemetry.js"):
+    for name in ("app.js", "common.js", "caps.js", "i18n.js", "telemetry.js", "config.js"):
         assert (ROOT / "web-dashboard" / name).read_bytes() == (ROOT / "web" / name).read_bytes(), name
 
 
@@ -177,13 +177,19 @@ def test_result_card_layout_uses_its_own_width_and_has_all_parts():
 
 def test_usage_log_is_local_only_and_wired_into_both_pages():
     js = (ROOT / "web" / "telemetry.js").read_text(encoding="utf-8")
-    assert "fetch(" not in js and "sendBeacon" not in js and "XMLHttpRequest" not in js  # level A: never leaves the device
+    # nothing leaves the device unless the host set an endpoint AND the visitor agreed (level B)
+    assert "XMLHttpRequest" not in js and js.count("fetch(") == 1 and "const sending = () => !!endpoint() && consent === \"yes\"" in js
+    assert "if (!sending() || !queue.length) return;" in js and "if (sending()) queue" in js
+    cfg = (ROOT / "web" / "config.js").read_text(encoding="utf-8")
+    assert 'logEndpoint: ""' in cfg  # shipped disabled
+    for edition in ("web", "web-dashboard"):
+        assert (ROOT / edition / "config.js").read_bytes() == (ROOT / "web" / "config.js").read_bytes()
     for edition in ("web", "web-dashboard"):
         for page, script in (("index.html", "app.js"), ("caps.html", "caps.js")):
             html = (ROOT / edition / page).read_text(encoding="utf-8")
-            assert html.index('src="common.js"') < html.index('src="telemetry.js"') < html.index(f'src="{script}"')
+            assert html.index('src="common.js"') < html.index('src="config.js"') < html.index('src="telemetry.js"') < html.index(f'src="{script}"')
     for name in ("app.js", "caps.js"):
         src = (ROOT / "web" / name).read_text(encoding="utf-8")
         assert "Telemetry.log(\"analyze_done\"" in src and "Telemetry.feedbackBar(" in src
     for lang, ks in keys_by_lang().items():
-        assert {"log.count", "log.download", "log.clear", "fb.ask", "fb.good", "fb.thanks"} <= ks, lang
+        assert {"log.count", "log.localOnly", "consent.title", "consent.text", "consent.yes", "consent.no", "log.shareOn", "log.shareOff", "log.download", "log.clear", "fb.ask", "fb.good", "fb.thanks"} <= ks, lang
