@@ -11,8 +11,8 @@
   --muted: #697586;
   --line: #dde2e8;
   --soft: #f6f8fa;
-  --navy: #1b3052;
-  --navy-2: #243d66;
+  --navy: rgb(var(--p-900, 27 48 82));
+  --navy-2: rgb(var(--p-800, 36 61 102));
   --gold: #c9a24a;
   /* accent follows the user-selectable primary colour (--p-* set by common.js); fallbacks = default blue */
   --accent: rgb(var(--p-600, 37 99 201));
@@ -39,8 +39,8 @@
     --muted: #8f9aa7;
     --line: #2a343f;
     --soft: #1d2630;
-    --navy: #13243d;
-    --navy-2: #1b3150;
+    --navy: rgb(var(--p-950, 19 36 61));
+    --navy-2: rgb(var(--p-900, 27 49 80));
     --accent: rgb(var(--p-400, 107 157 255));
     --accent-ink: rgb(var(--p-300, 157 188 255));
     --accent-soft: rgb(var(--p-900, 31 51 84));
@@ -61,8 +61,8 @@
   --muted: #8f9aa7;
   --line: #2a343f;
   --soft: #1d2630;
-  --navy: #13243d;
-  --navy-2: #1b3150;
+  --navy: rgb(var(--p-950, 19 36 61));
+  --navy-2: rgb(var(--p-900, 27 49 80));
   --accent: rgb(var(--p-400, 107 157 255));
   --accent-ink: rgb(var(--p-300, 157 188 255));
   --accent-soft: rgb(var(--p-900, 31 51 84));
