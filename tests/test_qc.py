@@ -378,12 +378,13 @@ def test_cli_log_dir_records_numbers_only_and_appends(tmp_path):
     for _ in range(2):  # a second run appends to the same day file
         assert cli_main([str(img), "-o", str(tmp_path / "out"), "--no-images", "--log-dir", str(logs)]) == 0
     ev = _read_log(logs)
-    assert [e["event"] for e in ev] == ["run_start", "analyze_done"] * 2
-    done = ev[1]
+    assert [e["event"] for e in ev] == ["run_start", "analyze_start", "analyze_done"] * 2
+    assert ev[1]["image"]["bytes"] == img.stat().st_size and ev[1]["source"] == "cli"
+    done = ev[2]
     assert done["v"] == 1 and done["app"]["ui"] == "cli" and done["source"] == "cli" and done["mode"] == "dish"
     assert done["result"]["verdict"] == "PASS" and done["result"]["score"] > 60
     assert done["params"]["min_score"] == 60 and done["image"]["bytes"] == img.stat().st_size
-    assert done["timing_ms"]["analyze"] >= 0 and ev[0]["session"] != ev[2]["session"]
+    assert done["timing_ms"]["analyze"] >= 0 and ev[0]["session"] != ev[3]["session"]
     raw = (Path(logs) / next(logs.iterdir()).name).read_text(encoding="utf-8")
     assert "white_colony" not in raw and str(tmp_path) not in raw  # no file name or path
 
@@ -420,4 +421,5 @@ def test_cli_log_dir_records_errors_then_reraises(tmp_path):
     with pytest.raises(Exception):
         cli_main([str(bad), "-o", str(tmp_path / "out"), "--log-dir", str(tmp_path / "logs")])
     ev = _read_log(tmp_path / "logs")
+    assert [e["event"] for e in ev[-2:]] == ["analyze_start", "analyze_error"]
     assert ev[-1]["event"] == "analyze_error" and "broken" not in json.dumps(ev[-1]) and str(tmp_path) not in json.dumps(ev[-1])

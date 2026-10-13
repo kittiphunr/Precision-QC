@@ -64,6 +64,8 @@ def test_valid_events_are_stored_with_only_whitelisted_fields(server):
     assert rows[0]["received"].endswith("Z")
     assert post(url, {"v": 1, "events": [ev(event="feedback", feedback={"correct": False, "expected_count": 42})]}) == 204
     assert len(lines(data)) == 2  # appended to the same day file
+    assert post(url, {"v": 1, "events": [ev(event="analyze_start"), ev(event="camera_use", action="open"), ev(event="camera_error", error="NotAllowedError")]}) == 204
+    assert [r["event"] for r in lines(data)][2:] == ["analyze_start", "camera_use", "camera_error"] and lines(data)[3]["action"] == "open"
 
 
 def test_refuses_wrong_method_origin_size_and_shape(server):

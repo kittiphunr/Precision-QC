@@ -13,8 +13,8 @@ const MAX_EVENTS = 50;       // events per request
 const MAX_PER_HOUR = 600;    // events per visitor per hour
 const KEEP_DAYS = 365;       // older files are deleted
 
-const EVENTS = ['page_open', 'analyze_done', 'analyze_error', 'param_change', 'export', 'feedback', 'log_download', 'consent'];
-const KEYS = ['v', 'ts', 'session', 'event', 'app', 'mode', 'source', 'image', 'params', 'result', 'timing_ms', 'batch', 'changed', 'feedback', 'error', 'format', 'n', 'env', 'referrer_same_site', 'granted'];
+const EVENTS = ['page_open', 'analyze_start', 'analyze_done', 'camera_use', 'camera_error', 'analyze_error', 'param_change', 'export', 'feedback', 'log_download', 'consent'];
+const KEYS = ['v', 'ts', 'session', 'event', 'app', 'mode', 'source', 'image', 'params', 'result', 'timing_ms', 'batch', 'changed', 'feedback', 'error', 'format', 'n', 'env', 'referrer_same_site', 'granted', 'action'];
 
 function done(int $code): void { http_response_code($code); exit; }
 
