@@ -11,12 +11,13 @@
   --muted: #697586;
   --line: #dde2e8;
   --soft: #f6f8fa;
-  --navy: #1b3052;
-  --navy-2: #243d66;
-  --gold: #c9a24a;
-  --accent: #2563c9;
-  --accent-ink: #1d4fa3;
-  --accent-soft: #e2ebfa;
+  --navy: rgb(var(--p-900, 27 48 82));
+  --navy-2: rgb(var(--p-800, 36 61 102));
+  --gold: rgb(var(--p-400, 201 162 74));
+  /* accent follows the user-selectable primary colour (--p-* set by common.js); fallbacks = default blue */
+  --accent: rgb(var(--p-600, 37 99 201));
+  --accent-ink: rgb(var(--p-700, 29 79 163));
+  --accent-soft: rgb(var(--p-100, 226 235 250));
   --good: #0ca30c;
   --good-ink: #17692a;
   --good-soft: #e4f3e6;
@@ -38,11 +39,11 @@
     --muted: #8f9aa7;
     --line: #2a343f;
     --soft: #1d2630;
-    --navy: #13243d;
-    --navy-2: #1b3150;
-    --accent: #6b9dff;
-    --accent-ink: #9dbcff;
-    --accent-soft: #1f3354;
+    --navy: rgb(var(--p-950, 19 36 61));
+    --navy-2: rgb(var(--p-900, 27 49 80));
+    --accent: rgb(var(--p-400, 107 157 255));
+    --accent-ink: rgb(var(--p-300, 157 188 255));
+    --accent-soft: rgb(var(--p-900, 31 51 84));
     --good-ink: #62d06e;
     --good-soft: #163020;
     --critical-ink: #ff8080;
@@ -60,11 +61,11 @@
   --muted: #8f9aa7;
   --line: #2a343f;
   --soft: #1d2630;
-  --navy: #13243d;
-  --navy-2: #1b3150;
-  --accent: #6b9dff;
-  --accent-ink: #9dbcff;
-  --accent-soft: #1f3354;
+  --navy: rgb(var(--p-950, 19 36 61));
+  --navy-2: rgb(var(--p-900, 27 49 80));
+  --accent: rgb(var(--p-400, 107 157 255));
+  --accent-ink: rgb(var(--p-300, 157 188 255));
+  --accent-soft: rgb(var(--p-900, 31 51 84));
   --good-ink: #62d06e;
   --good-soft: #163020;
   --critical-ink: #ff8080;
@@ -137,6 +138,14 @@ body {
 
 .controls { display: flex; gap: 10px 18px; flex-wrap: wrap; align-items: center; }
 .control { display: flex; align-items: center; gap: 8px; }
+.swatches { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .5); cursor: pointer; transition: transform .12s; }
+.swatch:hover { transform: scale(1.12); }
+.swatch.is-active { border-color: #fff; box-shadow: 0 0 0 2px var(--gold); }
+.swatch-custom { width: 24px; height: 24px; padding: 0; border: 2px solid rgba(255, 255, 255, .5); border-radius: 50%; background: none; cursor: pointer; overflow: hidden; appearance: none; -webkit-appearance: none; }
+.swatch-custom::-webkit-color-swatch-wrapper { padding: 0; }
+.swatch-custom::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.swatch-custom::-moz-color-swatch { border: 0; border-radius: 50%; }
 .control-label { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; opacity: .7; }
 .seg { display: inline-flex; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; padding: 2px; }
 .seg.pure-button-group .pure-button,
