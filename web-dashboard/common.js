@@ -104,7 +104,7 @@ applyTheme(currentTheme());
  * "" (default) removes the overrides so the stylesheet's built-in indigo applies. */
 const PRIMARY_KEY = "precision-qc-primary";
 const PRIMARY_PRESETS = ["#6366f1", "#3b82f6", "#0891b2", "#10b981", "#f59e0b", "#f43f5e", "#a855f7"];
-const PRIMARY_DEFAULT = PRIMARY_PRESETS[0];
+const PRIMARY_DEFAULT = (document.querySelector(".swatches")?.dataset.default || PRIMARY_PRESETS[0]).toLowerCase();
 // position of each shade between the chosen colour (500) and near-white (50) / near-black (950)
 const PRIMARY_STEPS = { 50: 0, 100: 0.17, 200: 0.4, 300: 0.62, 400: 0.82, 600: 0.2, 700: 0.4, 800: 0.6, 900: 0.78, 950: 1 };
 
