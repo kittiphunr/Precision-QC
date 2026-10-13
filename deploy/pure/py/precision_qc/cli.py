@@ -60,8 +60,10 @@ class UsageLog:
             print(f"warning: cannot write usage log: {err}", file=sys.stderr)
             self.dir = None
 
-    def attempt(self, fn, **extra):
-        """Call ``fn()``; return ``(value, elapsed_ms)``. A failure is logged as analyze_error and re-raised."""
+    def attempt(self, f: Path, fn, **extra):
+        """Call ``fn()`` for image ``f``; return ``(value, elapsed_ms)``. Logs analyze_start first;
+        a failure is logged as analyze_error and re-raised."""
+        self.log("analyze_start", source="cli", image={"bytes": f.stat().st_size}, **extra)
         t0 = time.perf_counter()
         try:
             value = fn()
@@ -137,7 +139,7 @@ def run_multi(files, cfg, out: Path, no_images: bool, ulog: UsageLog = None):
     ulog = ulog or UsageLog()
     rows = []
     for f in files:
-        res, ms = ulog.attempt(lambda: analyze_plates(f, cfg, name=f.name), batch=True)
+        res, ms = ulog.attempt(f, lambda: analyze_plates(f, cfg, name=f.name), batch=True)
         if not no_images:
             overview_image(res).save(out / f"{f.stem}_overview.png")
         print(f"{f.name}: {res.summary['plates']} plate(s)  PASS {res.summary['pass']} / FAIL {res.summary['fail']}")
@@ -184,7 +186,7 @@ def run_caps(files, args, out: Path, ulog: UsageLog = None) -> int:
     ulog = ulog or UsageLog(mode="caps")
     rows = []
     for f in files:
-        res, ms = ulog.attempt(lambda: count_caps(f, cfg, name=f.name))
+        res, ms = ulog.attempt(f, lambda: count_caps(f, cfg, name=f.name))
         rep = res.report
         ulog.done(f, rep, _caps_result(rep), ms)
         rows.append(rep)
@@ -273,7 +275,7 @@ def main(argv=None) -> int:
 
     rows = []
     for f in files:
-        an, ms = ulog.attempt(lambda: analyze(f, cfg, name=f.name))
+        an, ms = ulog.attempt(f, lambda: analyze(f, cfg, name=f.name))
         rep = an.report
         ulog.done(f, rep, _dish_result(rep), ms)
         rows.append(rep)

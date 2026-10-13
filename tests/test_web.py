@@ -191,5 +191,10 @@ def test_usage_log_is_local_only_and_wired_into_both_pages():
     for name in ("app.js", "caps.js"):
         src = (ROOT / "web" / name).read_text(encoding="utf-8")
         assert "Telemetry.log(\"analyze_done\"" in src and "Telemetry.feedbackBar(" in src
+    common = (ROOT / "web" / "common.js").read_text(encoding="utf-8")
+    for event in ("camera_use", "camera_error"):
+        assert f'Telemetry.log("{event}"' in common
+    for name in ("app.js", "caps.js"):
+        assert 'Telemetry.log("analyze_start"' in (ROOT / "web" / name).read_text(encoding="utf-8")
     for lang, ks in keys_by_lang().items():
         assert {"log.count", "log.localOnly", "consent.title", "consent.text", "consent.yes", "consent.no", "log.shareOn", "log.shareOff", "log.download", "log.clear", "fb.ask", "fb.good", "fb.thanks"} <= ks, lang

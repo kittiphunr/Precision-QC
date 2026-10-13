@@ -349,6 +349,7 @@ function initCamera(onCapture) {
     stop();
     const video_c = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "environment" };
     stream = await navigator.mediaDevices.getUserMedia({ video: video_c, audio: false });
+    Telemetry.log("camera_use", { action: deviceId ? "switch" : "open" });
     video.srcObject = stream;
     await video.play().catch(() => { /* autoplay quirks */ });
     if (select) {
@@ -363,14 +364,16 @@ function initCamera(onCapture) {
     toggle.hidden = true;
   }
 
-  toggle.addEventListener("click", () => start().catch((err) => { console.error(err); alert(t("cam.error")); }));
+  // only the error's name (NotAllowedError, NotFoundError, ...) is logged, never its message
+  toggle.addEventListener("click", () => start().catch((err) => { console.error(err); Telemetry.log("camera_error", { error: err?.name || "Error" }); alert(t("cam.error")); }));
   $("#cam-close")?.addEventListener("click", close);
-  select?.addEventListener("change", () => start(select.value).catch((err) => console.error(err)));
+  select?.addEventListener("change", () => start(select.value).catch((err) => { console.error(err); Telemetry.log("camera_error", { error: err?.name || "Error" }); }));
   $("#cam-shot")?.addEventListener("click", () => {
     if (!video.videoWidth) return;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
+    Telemetry.log("camera_use", { action: "shot", image: { w: canvas.width, h: canvas.height } });
     canvas.toBlob((blob) => {
       if (!blob) return;
       const name = `camera_${isoDate(new Date())}_${Date.now().toString().slice(-4)}.jpg`;

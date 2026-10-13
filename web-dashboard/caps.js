@@ -330,6 +330,7 @@ async function runCaps(files) {
     await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
+      Telemetry.log("analyze_start", { source: Telemetry.sourceOf(file), image: Telemetry.imageInfo(file), params: Telemetry.params(JSON.parse(cfgJson)) });
       const t0 = performance.now();
       const data = JSON.parse(api.count_caps_to_json(bytes, cfgJson, file.name));
       Telemetry.log("analyze_done", { source: Telemetry.sourceOf(file), image: Telemetry.imageInfo(file, data.image_size),

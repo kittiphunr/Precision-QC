@@ -282,6 +282,7 @@ async function runBatchFile(file, cfgJson) {
   await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
+    Telemetry.log("analyze_start", { source: Telemetry.sourceOf(file), batch: true, image: Telemetry.imageInfo(file), params: Telemetry.params(JSON.parse(cfgJson)) });
     const t0 = performance.now();
     const data = JSON.parse(api.analyze_plates_to_json(bytes, cfgJson, file.name));
     const ms = Math.round(performance.now() - t0);
@@ -336,6 +337,7 @@ async function runFiles(files, batch = batchMode) {
     await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
+      Telemetry.log("analyze_start", { source: Telemetry.sourceOf(file), image: Telemetry.imageInfo(file), params: Telemetry.params(JSON.parse(cfgJson)) });
       const t0 = performance.now();
       const report = JSON.parse(api.analyze_to_json(bytes, cfgJson, file.name));
       Telemetry.log("analyze_done", { source: Telemetry.sourceOf(file), image: Telemetry.imageInfo(file, report.image_size),

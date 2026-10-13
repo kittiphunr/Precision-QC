@@ -53,11 +53,11 @@
 | event | เมื่อไร | ใช้ทำอะไร |
 |---|---|---|
 | `page_open` | เปิดหน้า | จำนวนผู้ใช้/อุปกรณ์/ภาษา/ธีม |
-| `analyze_start` / `analyze_done` | เริ่ม/จบวิเคราะห์ | เวลาประมวลผล, สัดส่วน PASS/FAIL, การกระจายคะแนน |
+| `analyze_start` / `analyze_done` | เริ่ม/จบวิเคราะห์ | เวลาประมวลผล, สัดส่วน PASS/FAIL, การกระจายคะแนน — `analyze_start` ที่ไม่มี `analyze_done`/`analyze_error` ตามมา (ใน session เดียวกัน) แปลว่าค้าง/แท็บถูกปิด/หน่วยความจำหมด (เช่น ภาพใหญ่บนมือถือ) |
 | `analyze_error` | วิเคราะห์ล้มเหลว | `code` + ข้อความสั้น (ไม่ใส่ stack ที่มีพาธ) — หา bug จริง |
 | `param_change` | ปรับเกณฑ์ | รู้ว่าเกณฑ์ไหนผู้ใช้ไม่พอใจ → ปรับค่า default |
 | `export` | ดาวน์โหลด PDF / ภาพ / CSV | วัดฟีเจอร์ที่ใช้จริง |
-| `camera_use` / `camera_error` | ใช้/เปิดกล้องไม่ได้ | ปัญหาอุปกรณ์/สิทธิ์ |
+| `camera_use` / `camera_error` | ใช้กล้อง (`action`: `open` / `switch` / `shot` พร้อมขนาดภาพ) / เปิดกล้องไม่ได้ (`error` = ชื่อชนิด เช่น `NotAllowedError`) | ปัญหาอุปกรณ์/สิทธิ์ |
 | `feedback` | ผู้ใช้กด 👍/👎 หรือแก้ผล (เช่น "จริงๆ ควร PASS") | **ป้ายกำกับ (label) จริง** สำหรับปรับปรุง/ประเมินความแม่นยำ |
 
 > `feedback` มีคุณค่าสูงสุดเพื่อการพัฒนา — แนะนำเพิ่มปุ่ม "ผลถูกต้องไหม?" ในหน้าผลลัพธ์
@@ -105,9 +105,9 @@
 
 - โค้ด: `web/telemetry.js` (สำเนาเหมือนกันใน `web-dashboard/`) โหลดหลัง `common.js` ในทั้งสองหน้าและทั้งสองเวอร์ชัน
 - เก็บใน `localStorage` คีย์ `precision-qc-log` สูงสุด 500 เหตุการณ์ล่าสุด **ไม่มีการส่งข้อมูลออกนอกเครื่อง** (มี test ตรวจว่าไม่ใช้ `fetch`/`sendBeacon`)
-- เหตุการณ์ที่บันทึก: `page_open`, `analyze_done`, `analyze_error`, `param_change`, `export` (pdf/csv/png), `feedback`, `log_download`
+- เหตุการณ์ที่บันทึก: `page_open`, `analyze_start`, `analyze_done`, `analyze_error`, `param_change`, `export` (pdf/csv/png), `camera_use`, `camera_error`, `feedback`, `log_download`
   - `source` แยก `upload` / `camera` / `sample`
-  - ยังไม่ได้ทำ: `analyze_start`, `camera_use`/`camera_error`
+  - `analyze_start`, `camera_use`, `camera_error` ทำแล้วทั้งเว็บ; CLI มี `analyze_start` ด้วย (ไม่มีกล้อง)
 - ปุ่ม feedback ในการ์ดผลทุกใบ: 👍 ถูกต้อง · 👎 ควรเป็น PASS/FAIL (หน้าตรวจจาน) · 👎 + จำนวนจริง (หน้านับดอก) ซึ่งเป็นป้ายกำกับจริงสำหรับประเมินความแม่นยำ
 - ท้ายหน้ามีจำนวนรายการ พร้อมปุ่ม *ดาวน์โหลด* (`.jsonl`) และ *ลบ*
 - ข้อความ 3 ภาษาอยู่ใน `i18n.js` (คีย์ `log.*`, `fb.*`)
@@ -121,7 +121,7 @@ python -m precision_qc inputs/ -o reports --log-dir logs --caps  # นับด�
 ```
 
 - เขียนต่อท้าย (append) ที่ `logs/usage-YYYYMMDD.jsonl` (วันที่ตาม UTC) — รันซ้ำหลายครั้งในวันเดียวกันได้ไฟล์เดียวกัน ถ้าไม่ใส่ `--log-dir` จะไม่เขียนอะไรเลย
-- schema เดียวกับเว็บ: `app.ui = "cli"`, `source = "cli"`, `mode` = `dish` | `caps`; เหตุการณ์ `run_start`, `analyze_done` (โหมด `--multi` ได้หนึ่งรายการต่อจาน พร้อม `batch.plates/rank`), `analyze_error`
+- schema เดียวกับเว็บ: `app.ui = "cli"`, `source = "cli"`, `mode` = `dish` | `caps`; เหตุการณ์ `run_start`, `analyze_start`, `analyze_done` (โหมด `--multi` ได้หนึ่งรายการต่อจาน พร้อม `batch.plates/rank`), `analyze_error`
 - **ไม่เก็บชื่อไฟล์/พาธ/เนื้อภาพ** — เก็บแค่ขนาดไฟล์และขนาดภาพ; `analyze_error` เก็บเฉพาะชื่อชนิด exception เพราะข้อความมักมีพาธไฟล์
 - เขียน log ไม่สำเร็จ (เช่น โฟลเดอร์สร้างไม่ได้) จะแจ้งเตือนทาง stderr แล้วทำงานต่อ ไม่ทำให้การวิเคราะห์ล้มเหลว
 - `.github/workflows/qc-batch.yml` ใส่ `--log-dir logs` และอัปโหลดเป็น artifact `qc-usage-log` (เก็บ 90 วัน) แยกจาก `qc-reports`; `logs/` อยู่ใน `.gitignore` (ห้าม commit)
